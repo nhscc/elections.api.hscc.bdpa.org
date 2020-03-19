@@ -1,9 +1,9 @@
 {
-  "name": "airlines.xunn.io",
-  "description": "https://airlines.xunn.io",
+  "name": "elections.api.deepcode.io",
+  "description": "https://elections.api.deepcode",
   "repository": {
     "type": "git",
-    "url": "https://git.xunn.io/open-source/web-mirrored/airlines.xunn.io"
+    "url": "https://git.xunn.io/open-source/web-mirrored/elections.api.deepcode"
   },
   "version": "0.0.1",
   "scripts": {
@@ -27,9 +27,6 @@
   "jest": {
     "testEnvironment": "node",
     "verbose": true,
-    "transform": {
-      "^.+\\.js$": "<rootDir>/jest.preprocess.js"
-    },
     "moduleNameMapper": {
       "^universe/(.*)$": "<rootDir>/src/$1"
     },
@@ -80,8 +77,8 @@
     "eslint-plugin-import": "^2.20.1",
     "eslint-plugin-jsx-a11y": "^6.2.3",
     "fancy-log": "^1.3.3",
-    "flow-bin": "^0.120.1",
-    "flow-typed": "^3.0.0",
+    "flow-bin": "^0.121.0",
+    "flow-typed": "^3.1.0",
     "gulp": "^4.0.2",
     "gulp-tap": "^2.0.0",
     "inquirer": "^7.1.0",
