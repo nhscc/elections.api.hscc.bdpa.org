@@ -1,6 +1,7 @@
 /* @flow */
 
 import withBundleAnalyzer from '@zeit/next-bundle-analyzer'
+import DotenvWebpackPlugin from 'dotenv-webpack'
 import { populateEnv } from './src/dev-utils'
 
 populateEnv();
@@ -10,7 +11,8 @@ const {
 } = process.env;
 
 const paths = {
-    universe: `${__dirname}/src/`
+    universe: `${__dirname}/src/`,
+    multiverse: `${__dirname}/lib/`,
 };
 
 module.exports = (/* phase: string, { defaultConfig }: Object */) => {
@@ -35,13 +37,19 @@ module.exports = (/* phase: string, { defaultConfig }: Object */) => {
         // ? Webpack configuration
         // ! Note that the webpack configuration is executed twice: once
         // ! server-side and once client-side!
-        webpack: (config: Object) => {
+        webpack: (config: Object, { isServer }: Object) => {
             // ? These are aliases that can be used during JS import calls
             // ! Note that you must also change these same aliases in .flowconfig
             // ! Note that you must also change these same aliases in package.json (jest)
             config.resolve.alias = Object.assign({}, config.resolve.alias, {
-                universe: paths.universe
+                universe: paths.universe,
+                multiverse: paths.multiverse,
             });
+
+            if(isServer) {
+                // ? Add referenced environment variables defined in .env to bundle
+                config.plugins.push(new DotenvWebpackPlugin());
+            }
 
             return config;
         }

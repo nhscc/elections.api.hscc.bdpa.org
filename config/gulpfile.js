@@ -52,7 +52,7 @@ const readFileAsync = promisify(readFile);
 
 // * CLEANTYPES
 
-const cleanTypes = async () => {
+export const cleanTypes = async () => {
     populateEnv();
 
     const targets = parseGitIgnore(await readFileAsync(paths.flowTypedGitIgnore));
@@ -63,13 +63,20 @@ const cleanTypes = async () => {
 
 cleanTypes.description = `Resets the ${paths.flowTyped} directory to a pristine state`;
 
+// * CHECKENV
+
+export const checkEnv = async () => populateEnv();
+
+checkEnv.description = `Throws an error if any expected environment variables are not properly set `
+    + `(see expectedEnvVariables key in package.json)`;
+
 // * REGENERATE
 
 // ? If you change this function, run `npm run regenerate` twice: once to
 // ? compile this new function and once again to compile itself with the newly
 // ? compiled logic. If there is an error that prevents regeneration, you can
 // ? run `npm run generate` then `npm run regenerate` instead.
-const regenerate = () => {
+export const regenerate = () => {
     populateEnv();
 
     log(`Regenerating targets: "${paths.regenTargets.join('" "')}"`);
@@ -84,5 +91,3 @@ const regenerate = () => {
 };
 
 regenerate.description = 'Invokes babel on the files in config, transpiling them into their project root versions';
-
-export { regenerate, cleanTypes };
