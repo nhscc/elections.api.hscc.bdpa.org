@@ -3,6 +3,5 @@ node_modules/
 coverage/
 .next
 .env
-.vscode/launch.json
+.vscode/
 *.pem
-
