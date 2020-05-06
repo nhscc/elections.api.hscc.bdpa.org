@@ -14,7 +14,7 @@ if(!Array.isArray(expectedEnvVariables))
     throw new Error('expectedEnvVariables in package.json must be an array');
 
 const throwEnvError = variable => {
-    throw new Error(`${variable} is improperly defined. Did you copy dist.env -> .env ?`);
+    throw new Error(`${variable} is improperly defined.  Copy dist.env -> .env or run \`now env pull\`?`);
 };
 
 module.exports = {
@@ -24,7 +24,7 @@ module.exports = {
         // ? Parse the .env file at the project root or throw an error if it does
         // ? not exist or if parsing fails for some other reason
         if(!conf || !conf.parsed)
-            throw new Error('Failed to parse an .env configuration. Did you copy dist.env -> .env ?');
+            throw new Error('Failed to parse an .env configuration. Copy dist.env -> .env or run `now env pull`?');
 
         // ? Loop over the values in expectedEnvVariables from package.json to
         // ? ensure they exist and are strings. If this is not the case, throw an

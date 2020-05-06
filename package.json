@@ -3,7 +3,7 @@
   "description": "https://elections.api.deepcode",
   "repository": {
     "type": "git",
-    "url": "https://git.xunn.io/open-source/web-mirrored/elections.api.deepcode"
+    "url": "https://github.com/nhscc/api-2019"
   },
   "version": "0.0.1",
   "scripts": {
