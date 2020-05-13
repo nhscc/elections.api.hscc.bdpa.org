@@ -1,3 +1,4 @@
-# elections.api.deepcode.io
+# BDPA Elections Public API
 
-BDPA elections public API
+Root URI: https://elections.api.hscc.bdpa.org  
+Documentation and examples: https://app.apiary.io/electionshscc

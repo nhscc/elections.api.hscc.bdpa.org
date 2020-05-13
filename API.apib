@@ -26,7 +26,7 @@ wants a key, or needs to replace a lost or stolen key, please contact NHSCC
 staff through Slack or [open an issue on
 GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org).
 
-When you get your key, include it in your requests' headers as `"Key:
+When you get your key, include it in your requests' header as `"Key:
 yourAPIkeyhere"` and you will be immediately authenticated into the system.
 
 ## Rules of API access
@@ -41,7 +41,7 @@ yourAPIkeyhere"` and you will be immediately authenticated into the system.
 
 2. **Do not reveal your API key to anyone** not on your own team. It is how the
    API identifies your team. Do not upload it to GitHub or leave it lying around
-   in your source code. Save it to a file and .gitignore it or save it to an
+   in your source code. Save it to a file and `.gitignore` it or save it to an
    environment variable.
 
 3. Since the API is live, that also means you will be able to see and interact
@@ -56,14 +56,13 @@ yourAPIkeyhere"` and you will be immediately authenticated into the system.
    abusing any vulnerability or bug may result in disqualification.
 
 5. **The API was built to randomly return errors every so often**. That means
-   your app must be prepared to deal with HTTP 5xx and other bad responses.
-   However, if you're consistently getting 5xx errors back to back, then
-   something is wrong. Please report this if it happens using the methods
-   described earlier.
+   your app must be prepared to deal with `HTTP 555` and other bad responses.
+   However, if you're consistently getting `HTTP 5xx` errors back to back, then
+   something is wrong. Please report this if it happens.
 
 6. All responses are raw JSON. All request payloads must be sent as raw JSON.
-   `JSON.stringify()` or whatever language equivalent is available to you is
-   your friend!
+   `JSON.stringify()` and `JSON.parse()` or whatever language equivalent is
+   available to you is your friend!
 
 ## Request methods
 
@@ -95,17 +94,18 @@ period, your ban time will double.
 So **limit your apps to no more than 10 requests per second per API key**. You
 know you've been soft banned if you receive an `HTTP 429` response. Check the
 JSON response for the `retryAfter` key, which holds a number representing how
-long your API key and IP are banned from making further requests in seconds.
+long your API key and IP are banned from making further requests (in seconds).
 
 ## Pagination
 
 Endpoints that return data for multiple elections are paginated. Such endpoints
-accept a `limit` and `offset` parameters. `limit` tells the API how many
-elections you want returned as part of your response (see below). `offset` tells
-the API where to start counting elections.
+optionally accept a `limit` and `offset` parameters. `limit` tells the API how
+many elections you want returned as part of your response (see below). `offset`
+tells the API where to start counting elections.
 
-Limits larger than 50 are reduced to the maximum. The offset numbering starts at
-0, not 1. Omitting the offset parameter returns the first X elements.
+Limits larger than 50 are reduced to 50 (the maximum). The offset numbering
+starts at 0, not 1. Omitting the offset parameter returns the first `limit<=50`
+elements.
 
 ## Status Codes
 
@@ -167,9 +167,9 @@ at the moment. If this is a problem, please contact HSCC staff via Slack or
 - Use [Postman](https://www.postman.com/) (or this documentation) to play with the API.
 - Expect raw JSON that you must parse manually, not raw text or something else.
 - Are you sending properly formatted JSON as your request payload when necessary?
-- Entities in the system created by a specific API key are owned exclusively by that key. To put that another way: you cannot modify entities that do not belong to you. You can only view them.
-- Try outputting to stdout, console.log, or output to some log file when API events occur.
-- Elections are ordered in LIFO order.
+- Elections in the system created by a specific API key are owned exclusively by that key. To put that another way: you cannot modify elections that do not belong to you. You can only view them.
+- Try outputting to stdout, use `console.log`, or output to some log file when API requests are made and responses received.
+- Elections are returned in LIFO (descending) order by default.
 - All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
 
 ## Metadata endpoint [/meta]
@@ -229,7 +229,7 @@ This endpoint deals with summary metadata about all elections in the system.
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -242,6 +242,8 @@ This endpoint deals with summary metadata about all elections in the system.
 
 This endpoint deals with all elections data currently in the system.
 
+### List all elections in the system [GET]
+
 + Parameters
     + order (optional, enum[string]) - The order elections will be returned in.
         + Default: `desc`
@@ -252,8 +254,6 @@ This endpoint deals with all elections data currently in the system.
         + Default: `15`
     + offset (optional, number) - Zero-indexed offset to start counting from.
         + Default: `0`
-
-### List all elections in the system [GET]
 
 + Request
 
@@ -336,7 +336,94 @@ This endpoint deals with all elections data currently in the system.
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+### Create a new election [POST]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
+    + Attributes (object)
+        - title: My Election (string) - Title of the election.
+        + description: Election description (string) - [optional] Description of the election.
+        + options: `"Biden"`,`"Sanders"` (array[string]) - [optional] Array of options voters are allowed to select from.
+        + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
+        + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
+
+    + Body
+
+            {
+                "title": "My election #4",
+                "description": "Posting a new election, look at me!",
+                "options": ["Option A", "Option B", "Option C"],
+                "created": 1589347376211,
+                "opens": 1589347379811,
+                "closes": 1589347380731,
+            }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + electionId: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The GUID of the newly created election.
+
+    + Body
+
+            {
+                "success": true,
+                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5"
+            }
+
++ Response 400 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -347,12 +434,12 @@ This endpoint deals with all elections data currently in the system.
 
 ## Election endpoint [/election/{electionId}]
 
-This endpoint returns an expanded data object describing the election specified via electionId.
+This endpoint returns an expanded data object describing the election specified via **electionId**.
 
 + Parameters
     + electionId (string) - The GUID of the election targeted by some operation.
 
-### Return election information [GET]
+### Return data about an election [GET]
 
 + Request
 
@@ -408,94 +495,7 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "guru meditation",
-                "contrived": true
-            }
-
-### Create a new election [POST]
-
-+ Request
-
-    + Headers
-
-            Key: utf-8
-
-    + Attributes (object)
-        - title: My Election (string) - Title of the election.
-        + description: Election description (string) - [optional] Description of the election.
-        + options: 'A', 'B' (array[string]) - [optional] Array of options voters are allowed to select from.
-        + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
-        + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
-
-    + Body
-
-            {
-                "title": "My election #4",
-                "description": "Posting a new election, look at me!",
-                "options": ["Option A", "Option B", "Option C"],
-                "created": 1589347376211,
-                "opens": 1589347379811,
-                "closes": 1589347380731,
-            }
-
-+ Response 200 (application/json)
-
-    + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + electionId: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The GUID of the newly created election.
-
-    + Body
-
-            {
-                "success": true,
-                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5"
-            }
-
-+ Response 400 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
-            }
-
-+ Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "missing authentication key"
-            }
-
-+ Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
-+ Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -515,7 +515,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Attributes (object)
         + title: My Election (string) - [optional] Title of the election.
         + description: Election description (string) - [optional] Description of the election.
-        + options: 'A', 'B' (array[string]) - [optional] Array of options voters are allowed to select from.
+        + options: `"Biden"`,`"Sanders"` (array[string]) - [optional] Array of options voters are allowed to select from.
         + opens: 1589346000600 (number) - [optional] When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
         + closes: 1589346900600 (number) - [optional] When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
 
@@ -545,7 +545,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
+                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
             }
 
 + Response 401 (application/json)
@@ -587,7 +587,7 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -654,7 +654,7 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -665,12 +665,12 @@ This endpoint returns an expanded data object describing the election specified 
 
 ## Voters endpoint [/election/{electionId}/voters]
 
-This endpoint deals with election mappings between app-relative voter IDs and the options said voters chose when casting their votes.
+This endpoint deals with an election's mappings between voter IDs and rankings (votes).
 
 + Parameters
     + electionId (string) - The GUID of the election targeted by some operation.
 
-### Return the mapping of voters to votes [GET]
+### Return an election's mapping of voters to rankings [GET]
 
 + Request
 
@@ -682,18 +682,17 @@ This endpoint deals with election mappings between app-relative voter IDs and th
 
     + Attributes (object)
         + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + votes: `{"voterId":"1","option":"Biden"}`,`{"voterId":"2","option":"Sanders"}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
+        + votes: `{"voterId":"1","ranking":["Biden", "Sanders"]}`,`{"voterId":"2","ranking":["Sanders", "Biden"]}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
 
     + Body
 
             {
                 "success": true,
                 "votes": [
-                    {"voterId":"1","option":"Biden"},
-                    {"voterId":"2","option":"Sanders"},
-                    {"voterId":"3","option":"Warren"},
-                    {"voterId":"4","option":"Warren"},
-                    {"voterId":"5","option":"Warren"}
+                    {"voterId":"1","ranking":["Biden", "Warren", "Sanders"]},
+                    {"voterId":"2","ranking":["Sanders", "Warren", "Biden"]},
+                    {"voterId":"3","ranking":["Warren", "Sanders", "Biden"]},
+                    {"voterId":"4","ranking":["Warren", "Biden", "Sanders"]}
                 ]
             }
 
@@ -725,7 +724,7 @@ This endpoint deals with election mappings between app-relative voter IDs and th
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -734,7 +733,7 @@ This endpoint deals with election mappings between app-relative voter IDs and th
                 "contrived": true
             }
 
-### Replace the mapping of voters to votes [PUT]
+### Replace an election's mapping of voters to rankings [PUT]
 
 + Request
 
@@ -746,9 +745,9 @@ This endpoint deals with election mappings between app-relative voter IDs and th
 
             {
                 "votes": [
-                    {"voterId": "voter1@email.com", "option": "Vanilla"},
-                    {"voterId": "voter2@email.com", "option": "Chocolate"},
-                    {"voterId": "voter3@email.com", "option": "Vanilla"}
+                    {"voterId": "voter1@email.com", "ranking": ["Vanilla", "Chocolate"]},
+                    {"voterId": "voter2@email.com", "ranking": ["Chocolate", "Vanilla"]},
+                    {"voterId": "voter3@email.com", "ranking": ["Vanilla", "Chocolate"]}
                 ]
             }
 
@@ -771,7 +770,7 @@ This endpoint deals with election mappings between app-relative voter IDs and th
     + Body
 
             {
-                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
+                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
             }
 
 + Response 401 (application/json)
@@ -813,7 +812,7 @@ This endpoint deals with election mappings between app-relative voter IDs and th
 
     + Attributes (object)
         + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
 
     + Body
 
@@ -829,15 +828,14 @@ This endpoint deals with election mappings between app-relative voter IDs and th
 + electionId: `afdf5513-ab35-4fbd-ad52-c22dbc899d31` (string) - GUID representing the election. Generated automatically by the server.
 + title: My Election (string) - Title of the election.
 + description: Election description (string) - Description of the election.
-+ options: 'A', 'B' (array[string]) - Array of options voters are allowed to select from.
-+ votes: `{"voterId":"1","option":"Biden"}`,`{"voterId":"2","option":"Sanders"}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
++ options: `"Biden"`,`"Sanders"` (array[string]) - Array of options voters are allowed to select from.
 + created: 1589345900650  (number) - When this election was created [unix epoch seconds]. Generated automatically by the server.
 + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
 + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
-+ owned: true (boolean) - If the client created this election.
++ owned: true (boolean) - If the API `Key` making the request created this election or not.
 + deleted: false (boolean) - If this election has been marked as deleted.
 
 ### Vote (object)
 
-+ voterId: myemail@me.com (string) - A unique relative to your app identifier representing a voter in your own system. This can be whatever string you'd like it to be.
-+ option: Elizabeth Warren (string) - Whichever corresponding choice the voter represented by `voterId` made when casting this vote.
++ voterId: myemail@me.com (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be.
++ ranking: `"Biden"`,`"Sanders"` (array[string]) - Whichever ranked choices the voter represented by `voterId` made when casting their vote. From left to right, the order of the array represents the ranking users' chose from most preferred to least preferred.
