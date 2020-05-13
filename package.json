@@ -1,11 +1,11 @@
 {
   "name": "elections.api.hscc.bdpa.org",
-  "description": "https://elections.api.deepcode",
+  "description": "https://elections.api.hscc.bdpa.org",
   "repository": {
     "type": "git",
-    "url": "https://github.com/nhscc/api-2019"
+    "url": "https://github.com/nhscc/elections.api.hscc.bdpa.org"
   },
-  "version": "0.0.1",
+  "version": "2.0.0",
   "scripts": {
     "dev": "next -p 3002",
     "build": "next build",
