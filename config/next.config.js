@@ -1,6 +1,6 @@
 /* @flow */
 
-import withBundleAnalyzer from '@zeit/next-bundle-analyzer'
+import withBundleAnalyzer from '@next/bundle-analyzer'
 import DotenvWebpackPlugin from 'dotenv-webpack'
 import { populateEnv } from './src/dev-utils'
 

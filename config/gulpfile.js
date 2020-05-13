@@ -17,10 +17,6 @@ import tap from 'gulp-tap'
 import del from 'del'
 import log from 'fancy-log'
 import parseGitIgnore from 'parse-gitignore'
-import sh from 'shelljs'
-
-sh.config.silent = true;
-sh.config.fatal = true;
 
 const paths = {};
 
