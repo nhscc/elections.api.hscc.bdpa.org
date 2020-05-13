@@ -1,0 +1,843 @@
+FORMAT: 1A
+HOST: https://elections.api.hscc.bdpa.org/v1
+
+# BDPA Elections API
+
+Based on [simple REST
+principles](https://searchapparchitecture.techtarget.com/definition/RESTful-API),
+the BDPA Elections API returns JSON data responses to requests. This is the API
+used by teams and their apps for the 2019 BDPA National High School Computer
+Competition. It holds all of the election data teams' apps must query and
+update. The API is live and will ideally remain online indefinitely.
+
+The base address of BDPA Elections API is https://elections.api.hscc.bdpa.org/X
+where `X` is the version of the API you want to use. There is currently only one
+version, so `X = v1`. Each version of the API provides a set of endpoints with
+their own unique path and requirements.
+
+[The source code behind the API is available on
+GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org). If you have any
+troubles, please open an issue there.
+
+## Requesting a key
+
+To access the majority of this API's endpoints requires a key. If your team
+wants a key, or needs to replace a lost or stolen key, please contact NHSCC
+staff through Slack or [open an issue on
+GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org).
+
+When you get your key, include it in your requests' headers as `"Key:
+yourAPIkeyhere"` and you will be immediately authenticated into the system.
+
+## Rules of API access
+
+1. Do not bombard the API with requests or you risk permanent IP/subnet ban.
+   **Limit your apps to no more than 10 requests per second per API key**. If
+   your app ends up sending too many requests over some time period, you'll get
+   a `HTTP 429` response along with a monotonically increasing soft ban
+   (starting at 5 minutes). Similarly, the size of requests is strictly limited,
+   so you must limit the amount of data you're sending. When you send a request
+   that is too large, it will fail with a `HTTP 413` response.
+
+2. **Do not reveal your API key to anyone** not on your own team. It is how the
+   API identifies your team. Do not upload it to GitHub or leave it lying around
+   in your source code. Save it to a file and .gitignore it or save it to an
+   environment variable.
+
+3. Since the API is live, that also means you will be able to see and interact
+   with content posted by other teams. Please do not post anything
+   inappropriate. You will only be able to modify your own content, but you will
+   be able to pull down and view any other team's election data.
+
+4. If you encounter any vulnerabilities, errors, or other issues, contact NHSCC
+   staff via Slack or [open an issue on
+   GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org). For
+   significant enough finds, bonus points may be awarded. On the other hand,
+   abusing any vulnerability or bug may result in disqualification.
+
+5. **The API was built to randomly return errors every so often**. That means
+   your app must be prepared to deal with HTTP 5xx and other bad responses.
+   However, if you're consistently getting 5xx errors back to back, then
+   something is wrong. Please report this if it happens using the methods
+   described earlier.
+
+6. All responses are raw JSON. All request payloads must be sent as raw JSON.
+   `JSON.stringify()` or whatever language equivalent is available to you is
+   your friend!
+
+## Request methods
+
+This API is based on [simple REST
+principles](https://searchapparchitecture.techtarget.com/definition/RESTful-API).
+Resources are accessed via standard HTTPS requests in UTF-8 format to an API
+endpoint. This API understands the following HTTP request methods:
+
+| METHOD | MEANING |
+|-----   |-----    |
+| GET    | Return data about one or more elections |
+| POST   | Create a new election                   |
+| PUT    | Modify data about an election           |
+| DELETE | Delete an election                      |
+
+## Globally Unique Election IDs
+
+To retrieve data about an election, you must know that election's ID. Election
+IDs are globally unique within the API. That is: no two elections will ever have
+the same ID, even across different teams. Use this fact to your advantage.
+
+## Rate Limits
+
+As said earlier, do not bombard the API with requests. If you do, the API will
+soft ban you for five minutes the first time before accepting requests from your
+API key or IP address again. Each following time this happens within a certain
+period, your ban time will double.
+
+So **limit your apps to no more than 10 requests per second per API key**. You
+know you've been soft banned if you receive an `HTTP 429` response. Check the
+JSON response for the `retryAfter` key, which holds a number representing how
+long your API key and IP are banned from making further requests in seconds.
+
+## Pagination
+
+Endpoints that return data for multiple elections are paginated. Such endpoints
+accept a `limit` and `offset` parameters. `limit` tells the API how many
+elections you want returned as part of your response (see below). `offset` tells
+the API where to start counting elections.
+
+Limits larger than 50 are reduced to the maximum. The offset numbering starts at
+0, not 1. Omitting the offset parameter returns the first X elements.
+
+## Status Codes
+
+The Elections API will issue responses with one of the following status codes:
+
+| STATUS | MEANING |
+|-----   |-----    |
+| 200    | Your request completed successfully. |
+| 400    | Your request was malformed or otherwise bad. Check the requirements. |
+| 401    | Session is not authenticated. Put your API key in the header! |
+| 403    | Session is not authorized. You tried to do something you can't do. |
+| 404    | The resource (or endpoint) was not found. Check your syntax. |
+| 405    | Bad method. The endpoint does not support your request's method. |
+| 413    | Your request was too large and was dropped. |
+| 429    | You've been rate limited. Try your request again after a few minutes. |
+| 5xx    | Something happened on the server that is outside your control. |
+
+## Response Schema
+
+All responses issued by the API will follow one of the two following schemas.
+
+### Success Schema
+
+When a request you've issued succeeds, the response will look like the
+following:
+
+```json
+{
+    "success": "true",
+    // any other data you requested
+}
+```
+
+Note that all time data is represented as the number of milliseconds elapsed
+since January 1, 1970 00:00:00 UTC, or the same thing that is returned by
+JavaScript's `Date.now()` method.
+
+### Error Schema
+
+When a request you've issued fails, along with the non-200 status code, the
+response will look like the following:
+
+```json
+{
+    "error": "an error message describing what went wrong",
+    // any other relevant data (like retryAfter)
+}
+```
+
+## CORS: Cross-Origin Resource Sharing
+
+The API does not supports Cross Origin Resource Sharing (CORS) for AJAX requests
+at the moment. If this is a problem, please contact HSCC staff via Slack or
+[open an issue on GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org).
+
+## Tips for debugging
+
+- Are you using the right method?
+- Use [Postman](https://www.postman.com/) (or this documentation) to play with the API.
+- Expect raw JSON that you must parse manually, not raw text or something else.
+- Are you sending properly formatted JSON as your request payload when necessary?
+- Entities in the system created by a specific API key are owned exclusively by that key. To put that another way: you cannot modify entities that do not belong to you. You can only view them.
+- Try outputting to stdout, console.log, or output to some log file when API events occur.
+- Elections are ordered in LIFO order.
+- All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+
+## Metadata endpoint [/meta]
+
+This endpoint deals with summary metadata about all elections in the system.
+
+### Return metadata about the system [GET]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + upcomingElections (number) - Total number of elections not yet open.
+        + openElections (number) - Total number of elections currently open.
+        + closedElections (number) - Total number of elections that have closed.
+
+    + Body
+
+            {
+                "success": true,
+                "upcomingElections": 12,
+                "openElections": 20,
+                "closedElections": 423
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+## Elections endpoint [/elections{?order,limit,offset}]
+
+This endpoint deals with all elections data currently in the system.
+
++ Parameters
+    + order (optional, enum[string]) - The order elections will be returned in.
+        + Default: `desc`
+        + Members
+            + `asc`
+            + `desc`
+    + limit (optional, number) - Maximum number of elections returned (less than or equal to 50).
+        + Default: `15`
+    + offset (optional, number) - Zero-indexed offset to start counting from.
+        + Default: `0`
+
+### List all elections in the system [GET]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + elections (array[Election]) - An array of elections.
+
+    + Body
+
+            {
+                "success": true,
+                "elections": [
+                    {
+                        "electionId": "adc68d36-d32f-4f68-ab8e-02ea5abee516",
+                        "title": "My election #1",
+                        "description": "My demo election!",
+                        "options": [],
+                        "created": 1589347376211,
+                        "opens": 1589347379811,
+                        "closes": 1589347380731,
+                        "owned": true,
+                        "deleted": false
+                    },
+                    {
+                        "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5",
+                        "title": "My election #2",
+                        "description": "A custom election I made",
+                        "options": ["Option 1", "Option 2"],
+                        "created": 1589347376211,
+                        "opens": 1589347379811,
+                        "closes": 1589347380731,
+                        "owned": false,
+                        "deleted": true
+                    },
+                    {
+                        "electionId": "7d69233c-b380-4c14-be57-2638bd9a4081",
+                        "title": "My election #3",
+                        "description": "An election to end all elections?",
+                        "options": ["Vanilla", "Chocolate"],
+                        "created": 1589347376211,
+                        "opens": 1589347379811,
+                        "closes": 1589347380731,
+                        "owned": true,
+                        "deleted": false
+                    }
+                ]
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+## Election endpoint [/election/{electionId}]
+
+This endpoint returns an expanded data object describing the election specified via electionId.
+
++ Parameters
+    + electionId (string) - The GUID of the election targeted by some operation.
+
+### Return election information [GET]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
++ Response 200 (application/json)
+
+    + Attributes (Election)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+
+    + Body
+
+            {
+                "success": true,
+                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5",
+                "title": "My election #2",
+                "description": "A custom election I made",
+                "options": ["Option 1", "Option 2"],
+                "created": 1589347376211,
+                "opens": 1589347379811,
+                "closes": 1589347380731,
+                "owned": false,
+                "deleted": true
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+### Create a new election [POST]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
+    + Attributes (object)
+        - title: My Election (string) - Title of the election.
+        + description: Election description (string) - [optional] Description of the election.
+        + options: 'A', 'B' (array[string]) - [optional] Array of options voters are allowed to select from.
+        + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
+        + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
+
+    + Body
+
+            {
+                "title": "My election #4",
+                "description": "Posting a new election, look at me!",
+                "options": ["Option A", "Option B", "Option C"],
+                "created": 1589347376211,
+                "opens": 1589347379811,
+                "closes": 1589347380731,
+            }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + electionId: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The GUID of the newly created election.
+
+    + Body
+
+            {
+                "success": true,
+                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5"
+            }
+
++ Response 400 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+### Merge data into an existing election [PUT]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
+    + Attributes (object)
+        + title: My Election (string) - [optional] Title of the election.
+        + description: Election description (string) - [optional] Description of the election.
+        + options: 'A', 'B' (array[string]) - [optional] Array of options voters are allowed to select from.
+        + opens: 1589346000600 (number) - [optional] When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
+        + closes: 1589346900600 (number) - [optional] When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
+
+    + Body
+
+            {
+                "description": "Posting a new election, look at me!",
+                "options": ["Option A", "Option B", "Option C"]
+            }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+
+    + Body
+
+            {
+                "success": true
+            }
+
++ Response 400 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 403 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "session can only mutate own elections"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+### Delete an election [DELETE]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+
+    + Body
+
+            {
+                "success": true
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 403 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "session can only delete own elections"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+## Voters endpoint [/election/{electionId}/voters]
+
+This endpoint deals with election mappings between app-relative voter IDs and the options said voters chose when casting their votes.
+
++ Parameters
+    + electionId (string) - The GUID of the election targeted by some operation.
+
+### Return the mapping of voters to votes [GET]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + votes: `{"voterId":"1","option":"Biden"}`,`{"voterId":"2","option":"Sanders"}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
+
+    + Body
+
+            {
+                "success": true,
+                "votes": [
+                    {"voterId":"1","option":"Biden"},
+                    {"voterId":"2","option":"Sanders"},
+                    {"voterId":"3","option":"Warren"},
+                    {"voterId":"4","option":"Warren"},
+                    {"voterId":"5","option":"Warren"}
+                ]
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+### Replace the mapping of voters to votes [PUT]
+
++ Request
+
+    + Headers
+
+            Key: utf-8
+
+    + Body
+
+            {
+                "votes": [
+                    {"voterId": "voter1@email.com", "option": "Vanilla"},
+                    {"voterId": "voter2@email.com", "option": "Chocolate"},
+                    {"voterId": "voter3@email.com", "option": "Vanilla"}
+                ]
+            }
+
++ Response 200 (application/json)
+
+    + Attributes (object)
+        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+
+    + Body
+
+            {
+                "success": true
+            }
+
++ Response 400 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "<errors concerning parsing, syntax, JSON, formatting, bad key-values, etc are reported here>"
+            }
+
++ Response 401 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "missing authentication key"
+            }
+
++ Response 403 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "session can only mutate own elections"
+            }
+
++ Response 429 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + retryAfter (number) - Number of seconds your app should wait before sending another request.
+
+    + Body
+
+            {
+                "error": "session is rate limited",
+                "retryAfter": 900
+            }
+
++ Response 555 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 200 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
+
+    + Body
+
+            {
+                "error": "guru meditation",
+                "contrived": true
+            }
+
+## Data Structures
+
+### Election (object)
+
++ electionId: `afdf5513-ab35-4fbd-ad52-c22dbc899d31` (string) - GUID representing the election. Generated automatically by the server.
++ title: My Election (string) - Title of the election.
++ description: Election description (string) - Description of the election.
++ options: 'A', 'B' (array[string]) - Array of options voters are allowed to select from.
++ votes: `{"voterId":"1","option":"Biden"}`,`{"voterId":"2","option":"Sanders"}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
++ created: 1589345900650  (number) - When this election was created [unix epoch seconds]. Generated automatically by the server.
++ opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
++ closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
++ owned: true (boolean) - If the client created this election.
++ deleted: false (boolean) - If this election has been marked as deleted.
+
+### Vote (object)
+
++ voterId: myemail@me.com (string) - A unique relative to your app identifier representing a voter in your own system. This can be whatever string you'd like it to be.
++ option: Elizabeth Warren (string) - Whichever corresponding choice the voter represented by `voterId` made when casting this vote.

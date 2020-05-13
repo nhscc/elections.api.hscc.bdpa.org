@@ -7,7 +7,7 @@
   },
   "version": "0.0.1",
   "scripts": {
-    "dev": "sudo -u x-runner npx next -p 3002",
+    "dev": "next -p 3002",
     "build": "next build",
     "start": "next start",
     "test": "jest",
