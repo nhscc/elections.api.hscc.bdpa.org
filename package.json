@@ -39,7 +39,6 @@
     "yargs-parser": "^13.1.2"
   },
   "expectedEnvVariables": [
-    "BUNDLE_ANALYZE",
     "NODE_ENV|BABEL_ENV|APP_ENV"
   ],
   "dependencies": {
