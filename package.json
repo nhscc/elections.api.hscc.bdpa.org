@@ -7,9 +7,9 @@
   },
   "version": "2.0.0",
   "scripts": {
-    "dev": "next -p 3002",
-    "build": "next build",
-    "start": "next start",
+    "dev": "gulp checkEnv && next -p `npx -q get-clean-port`",
+    "build": "gulp checkEnv && next build",
+    "start": "gulp checkEnv && next start",
     "test": "jest",
     "install-types": "flow-typed install",
     "debug-remote": "node --inspect-brk='0.0.0.0:7777'",
