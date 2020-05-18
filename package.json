@@ -5,7 +5,7 @@
     "type": "git",
     "url": "https://github.com/nhscc/elections.api.hscc.bdpa.org"
   },
-  "version": "2.0.0",
+  "version": "1.0.0",
   "scripts": {
     "dev": "gulp checkEnv && next -p `npx -q get-clean-port`",
     "build": "gulp checkEnv && next build",
@@ -29,7 +29,8 @@
     "testEnvironment": "node",
     "verbose": true,
     "moduleNameMapper": {
-      "^universe/(.*)$": "<rootDir>/src/$1"
+      "^universe/(.*)$": "<rootDir>/src/$1",
+      "^multiverse/(.*)$": "<rootDir>/lib/$1"
     },
     "testPathIgnorePatterns": [
       "/node_modules/"
@@ -39,7 +40,8 @@
     "yargs-parser": "^13.1.2"
   },
   "expectedEnvVariables": [
-    "NODE_ENV|BABEL_ENV|APP_ENV"
+    "NODE_ENV|BABEL_ENV|APP_ENV",
+    "MONGODB_URI"
   ],
   "dependencies": {
     "@babel/cli": "^7.8.4",
@@ -59,8 +61,11 @@
     "confusing-browser-globals": "^1.0.9",
     "dotenv": "^8.2.0",
     "dotenv-webpack": "^1.8.0",
+    "find-package-json": "^1.2.0",
     "isomorphic-unfetch": "^3.0.0",
+    "mongodb": "^3.5.7",
     "next": "^9.4.0",
+    "next-session": "^3.1.0",
     "next-transpile-modules": "^3.3.0",
     "react": "^16.13.1",
     "react-dom": "^16.13.1"

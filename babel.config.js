@@ -35,6 +35,7 @@ const nextBabelPreset = ['next/babel', {
 const jestTestTargets = 'last 2 chrome versions';
 
 module.exports = {
+    parserOpts: { strictMode: true },
     plugins: [
         '@babel/plugin-proposal-export-default-from',
         '@babel/plugin-proposal-numeric-separator',
