@@ -66,6 +66,7 @@
     "react-dom": "^16.13.1"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^9.4.0",
     "babel-eslint": "^10.1.0",
     "babel-jest": "^26.0.1",
     "babel-plugin-source-map-support": "^2.1.1",
@@ -85,6 +86,6 @@
     "replace-in-file": "^6.0.0",
     "source-map": "^0.7.3",
     "source-map-support": "^0.5.19",
-    "@next/bundle-analyzer": "^9.4.0"
+    "vercel": "^19.0.1"
   }
 }
