@@ -1,5 +1,3 @@
-/* @flow */
-
 // * Due to this file being imported directly in node, Node-compliant ES6 must
 // * be used, and node doesn't support import statements. Once Node catches up
 // * with the times, all dirty ES5 artifacts like require() should be replaced
@@ -37,6 +35,7 @@ module.exports = {
         // ? Resolve the true node/application environment mode --> NODE_ENV
         // ? Recognized values: development, test, production
         process.env.NODE_ENV = process.env.NODE_ENV || process.env.BABEL_ENV || process.env.APP_ENV || 'unknown';
+        // eslint-disable-next-line no-console
         process.env.NODE_ENV === 'unknown' && console.warn('WARNING: the application environment resolved to "unknown"!');
     }
 };

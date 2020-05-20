@@ -1,7 +1,6 @@
 build/
 node_modules/
 coverage/
-flow-typed/
 .vscode/
 .next
 .env

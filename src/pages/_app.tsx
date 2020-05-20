@@ -1,10 +1,12 @@
-/* @flow */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 
 import * as React from 'react'
 import Head from 'next/head'
 
-export default function App({ Component, pageProps }: any) {
-    return (// * ContextProvider(s) for passing down state could go here
+import type { AppProps } from 'next/app'
+
+export default function App({ Component, pageProps }: AppProps): JSX.Element {
+    return (
         <React.Fragment>
             <Head>
                 <title>No Browser Access!</title>
