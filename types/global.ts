@@ -1,5 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import type { NextParamsRRWithSession } from 'multiverse/simple-auth-session'
+import type { ObjectId } from 'mongodb'
+
+export type GenericObject<T=unknown> = Record<string, T>;
 
 export type HTTPStatusCode =
       100 | 101 | 102
@@ -30,3 +33,45 @@ export type NextParamsRR<T = object> = {
 
 export type NextParamsRRQWithSession = NextParamsRRWithSession & { query: object };
 export type NextParamsResponseStatusQuery = NextParamsResponseQuery & NextParamsResponseStatus;
+
+export type Option = string;
+
+export type PrimitiveElection = {
+    title: string;
+    description: string;
+    options: Option[];
+    created: number;
+    opens: number;
+    closes: number;
+    deleted: boolean;
+};
+
+export type InternalElection = PrimitiveElection & {
+    _id: ObjectId;
+    owner: string;
+};
+
+export type Election = PrimitiveElection & {
+    election_id: ObjectId;
+    owned: boolean;
+};
+
+export type Ranking = {
+    voter_id: string;
+    ranking: Option[];
+};
+
+export type Rankings = Ranking[];
+
+export type ElectionRankings = {
+    election_id: ObjectId;
+    rankings: Rankings;
+};
+
+export type ErrorJSON = {
+    error: string;
+};
+
+export type SuccessJSON = { success: true };
+export type HTTP555 = ErrorJSON & { contrived: true };
+export type HTTP429 = ErrorJSON & { retryAfter: number };

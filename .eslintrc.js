@@ -38,40 +38,48 @@ module.exports = {
         'import/no-unresolved': ['error', { commonjs: true }],
         'no-unused-vars': 'off',
         'no-restricted-globals': ['warn'].concat(restrictedGlobals),
+        'react/jsx-max-depth': 'error',
+        '@typescript-eslint/camelcase': 'off',
+        // ? Disable these rules for all files
+        'no-undef': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
         '@typescript-eslint/no-var-requires': 'off',
-        'no-undef': 'off',
-        'react/jsx-max-depth': 'error',
     },
     overrides: [{
-        // enable the rule specifically for TypeScript files
+        // ? Enable these rules specifically for TypeScript files
         files: ['*.ts', '*.tsx'],
         rules: {
+            'no-undef': 'error',
             '@typescript-eslint/explicit-function-return-type': 'error',
             '@typescript-eslint/no-var-requires': 'error',
-            'no-undef': 'error'
+            // ? Already handled by vscode
+            '@typescript-eslint/no-unused-vars': 'off',
         }
     }],
     settings: {
         'import/extensions': [
-            '.ts', '.tsx', '.js'
+            '.ts', '.tsx', '.js', '.jsx',
         ],
+        // ? Switch parsers depending on which type of file we're looking at
         'import/parsers': {
             '@typescript-eslint/parser': ['.ts', '.tsx'],
             'babel-eslint': ['.js', '.jsx'],
         },
         'import/resolver': {
             alias : {
-              map: [
-                ['universe','./src'],
-                ['multiverse','./lib'],
-              ],
-              extensions: ['.js', '.jsx', '.ts', '.tsx'],
+                map: [
+                    // ! If changed, also update these aliases in package.json and .eslint.rc
+                    ['universe','./src'],
+                    ['multiverse','./lib'],
+                    ['types','./types'],
+                ],
+                extensions: ['.js', '.jsx', '.ts', '.tsx'],
             },
-            typescript: {}
+            typescript: {},
         },
         'import/ignore': [
-            '.*/node_modules/.*'
+            // ? Don't go complaining about anything that we don't own
+            '.*/node_modules/.*',
         ]
     }
 };

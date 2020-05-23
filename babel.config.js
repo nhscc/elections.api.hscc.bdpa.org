@@ -1,9 +1,6 @@
 // * Every now and then, take best practices from CRA
 // * https://tinyurl.com/yakv4ggx
 
-const sourceMapPlugin = 'babel-plugin-source-map-support';
-const sourceMapValue = 'inline';
-
 // ! This is pretty aggressive. It targets modern browsers only.
 // ? For some projects, less aggressive targets will make much more
 // ? sense!
@@ -43,6 +40,7 @@ module.exports = {
         '@babel/plugin-proposal-nullish-coalescing-operator',
         '@babel/plugin-proposal-json-strings',
         // * https://babeljs.io/blog/2018/09/17/decorators
+        // ? We're using the legacy proposal b/c that's what TypeScript wants
         ['@babel/plugin-proposal-decorators', { legacy: true }],
         '@babel/plugin-proposal-function-bind',
         '@babel/plugin-proposal-optional-chaining',
@@ -57,28 +55,26 @@ module.exports = {
     // ? configuration depending on the value of NODE_ENV and friends. Default
     // ? is: development
     env: {
+        // * Used by Vercel and manual deployments
         production: {
-            // ? Handled by Next.js and Webpack
-            /* sourceMaps: sourceMapValue,
-            plugins: [sourceMapPlugin], */
+            // ? Source maps are handled by Next.js and Webpack
             presets: [nextBabelPreset]
         },
+        // * Used by `npm run dev`; is also the default environment
+        development: {
+            // ? Source maps are handled by Next.js and Webpack
+            presets: [nextBabelPreset]
+        },
+        // * Used by Jest
         test: {
-            sourceMaps: sourceMapValue,
-            plugins: [sourceMapPlugin],
+            sourceMaps: 'both',
             presets: [
                 ['@babel/preset-env', { targets: targets }]
             ]
         },
-        development: {
-            // ? Handled by Next.js and Webpack
-            /* sourceMaps: sourceMapValue,
-            plugins: [sourceMapPlugin], */
-            presets: [nextBabelPreset]
-        },
+        // * Used by `npm run generate` and `npm run regenerate`
         generator: {
-            sourceMaps: sourceMapValue,
-            plugins: [sourceMapPlugin],
+            sourceMaps: 'inline',
             comments: false,
             presets: [
                 ['@babel/preset-env', {

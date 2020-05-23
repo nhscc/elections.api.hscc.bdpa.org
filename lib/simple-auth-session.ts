@@ -24,7 +24,8 @@ export async function sessionStart(args: NextParamsRR): Promise<void> {
 
 const setup = async (args: NextParamsRRWithSession): Promise<void> => {
     !args.req.session && await sessionStart(args);
-    args.req.session.__sa = args.req.session.__sa || {};
+    // TODO: use a symbol type for authed instead of relying on __sa.whatever
+    args.req.session.__sa = args.req.session.__sa || { authed: false };
 };
 
 export async function isAuthed(args: NextParamsRRWithSession): Promise<boolean> {
