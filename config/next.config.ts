@@ -1,5 +1,4 @@
 import withBundleAnalyzer from '@next/bundle-analyzer'
-import DotenvWebpackPlugin from 'dotenv-webpack'
 
 import type { Configuration } from 'webpack'
 
