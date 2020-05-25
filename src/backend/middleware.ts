@@ -1,12 +1,17 @@
-/* @flow */
-
-import { isAuthed } from 'multiverse/simple-auth-session'
+import { sendHttpErrorResponse } from 'multiverse/respond'
 
 import type { NextApiResponse } from 'next'
-import type { NextParamsRRWithSession } from 'multiverse/simple-auth-session'
+import type { NextParamsRR, GenericObject } from 'types/global'
 
-export type GenericHandlerParams = NextParamsRRWithSession & { methods: string[] };
-export type AsyncHandlerCallback = (params: NextParamsRRWithSession) => Promise<void>;
+export type GenericHandlerParams = NextParamsRR & { methods: string[] };
+export type AsyncHandlerCallback = (params: NextParamsRR) => Promise<void>;
+
+export function sendHttpContrivedError(res: NextApiResponse, responseJson: GenericObject) {
+    sendHttpErrorResponse(res, 555, {
+        error: '(note: do not report this contrived error)',
+        ...responseJson
+    });
+}
 
 /**
  * Generic middleware to handle any api endpoint. You can give it an empty async

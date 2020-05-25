@@ -39,18 +39,18 @@ module.exports = {
         'no-unused-vars': 'off',
         'no-restricted-globals': ['warn'].concat(restrictedGlobals),
         'react/jsx-max-depth': 'error',
+        'no-extra-boolean-cast': 'off',
         '@typescript-eslint/camelcase': 'off',
-        // ? Disable these rules for all files
-        'no-undef': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
+        // ? Disable these rules for all files...
+        'no-undef': 'off',
         '@typescript-eslint/no-var-requires': 'off',
     },
     overrides: [{
-        // ? Enable these rules specifically for TypeScript files
+        // ? ... but enable these rules specifically for TypeScript files
         files: ['*.ts', '*.tsx'],
         rules: {
             'no-undef': 'error',
-            '@typescript-eslint/explicit-function-return-type': 'error',
             '@typescript-eslint/no-var-requires': 'error',
             // ? Already handled by vscode
             '@typescript-eslint/no-unused-vars': 'off',

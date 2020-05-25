@@ -37,7 +37,7 @@ yourAPIkeyhere"` and you will be immediately authenticated into the system.
    a `HTTP 429` response along with a monotonically increasing soft ban
    (starting at 5 minutes). Similarly, the size of requests is strictly limited,
    so you must limit the amount of data you're sending. When you send a request
-   that is too large, it will fail with a `HTTP 413` response.
+   that is too large (>100KB), it will fail with a `HTTP 413` response.
 
 2. **Do not reveal your API key to anyone** not on your own team. It is how the
    API identifies your team. Do not upload it to GitHub or leave it lying around
@@ -99,13 +99,38 @@ long your API key and IP are banned from making further requests (in seconds).
 ## Pagination
 
 Endpoints that return data for multiple elections are paginated. Such endpoints
-optionally accept a `limit` and `offset` parameters. `limit` tells the API how
-many elections you want returned as part of your response (see below). `offset`
-tells the API where to start counting elections.
+optionally accept a `limit` and `after` parameters. `limit` is a number telling
+the API how many elections you want returned as part of your response (see
+below). `after` is a *MongoDB ObjectId* that determines which item is returned
+first.
 
-Limits larger than 50 are reduced to 50 (the maximum). The offset numbering
-starts at 0, not 1. Omitting the offset parameter returns the first `limit<=50`
-elements.
+`limit`s larger than 50 will be rejected. `after`s are special strings and not
+numbers. Omitting the `after` parameter returns the first `limit<=50` elements.
+`limit` must be a non-negative integer.
+
+For example, given the following dataset and a default limit of 3 (max 10):
+
+```JavaScript
+[
+    { item_id: 0xabc123, name: 'Item 1 name' },
+    { item_id: 0xabc124, name: 'Item 2 name' },
+    { item_id: 0xabc125, name: 'Item 3 name' },
+    { item_id: 0xabc126, name: 'Item 4 name' },
+    { item_id: 0xabc127, name: 'Item 5 name' },
+]
+```
+
+Paginated results:
+
+`limit=0`: 0 items returned  
+`limit=1`: an array with only the first item is returned  
+`limit=5`: an array of 5 items is returned (the whole dataset!)  
+`limit=10`: since there are only 5 items total, same as the previous result  
+`limit=10, after=0xabc123`: same as the previous result  
+`limit=2, after=0xabc124`: returns an array with 2 items: *0xabc125* and *0xabc126*  
+`limit=1, after=0xabc127`: returns an array with 0 items since there is nothing after *0xabc127*  
+`after=0xabc124`: returns an array with the default limit of 3 items: *0xabc125* through *0xabc127*  
+`limit=0, after=0xabc123`: same as the very first result  
 
 ## Status Codes
 
@@ -119,7 +144,7 @@ The Elections API will issue responses with one of the following status codes:
 | 403    | Session is not authorized. You tried to do something you can't do. |
 | 404    | The resource (or endpoint) was not found. Check your syntax. |
 | 405    | Bad method. The endpoint does not support your request's method. |
-| 413    | Your request was too large and was dropped. |
+| 413    | Your request was too large and was dropped. Max body size is 100KB. |
 | 429    | You've been rate limited. Try your request again after a few minutes. |
 | 5xx    | Something happened on the server that is outside your control. |
 
@@ -169,7 +194,7 @@ at the moment. If this is a problem, please contact HSCC staff via Slack or
 - Are you sending properly formatted JSON as your request payload when necessary?
 - Elections in the system created by a specific API key are owned exclusively by that key. To put that another way: you cannot modify elections that do not belong to you. You can only view them.
 - Try outputting to stdout, use `console.log`, or output to some log file when API requests are made and responses received.
-- Elections are returned in LIFO (descending) order by default.
+- Elections are returned in FIFO (first-election-in-is-the-first-election-out) ascending/queue order.
 - All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
 
 ## Metadata endpoint [/meta]
@@ -238,22 +263,19 @@ This endpoint deals with summary metadata about all elections in the system.
                 "contrived": true
             }
 
-## Elections endpoint [/elections{?order,limit,offset}]
+## Elections endpoint [/elections{?limit,after}]
 
 This endpoint deals with all elections data currently in the system.
+
+> Warning: An `HTTP 400` error response is returned when specifying a `limit` larger than 50 or when including `limit` or `after` query parameters in a non-GET request, both of which are not allowed.
 
 ### List all elections in the system [GET]
 
 + Parameters
-    + order (optional, enum[string]) - The order elections will be returned in.
-        + Default: `desc`
-        + Members
-            + `asc`
-            + `desc`
-    + limit (optional, number) - Maximum number of elections returned (less than or equal to 50).
+    + limit (optional, number) - [optional] Maximum number of elections returned (less than or equal to 50).
         + Default: `15`
-    + offset (optional, number) - Zero-indexed offset to start counting from.
-        + Default: `0`
+    + after (optional, number) - [optional] The `election_id` of the election that exists just before the first returned election in the result list, if it exists.
+        + Default: `null`
 
 + Request
 
@@ -265,7 +287,7 @@ This endpoint deals with all elections data currently in the system.
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + elections (array[Election]) - An array of elections.
+        + elections (array[Election]) - An array of elections. Empty if there are no more elections in system.
 
     + Body
 
@@ -273,7 +295,7 @@ This endpoint deals with all elections data currently in the system.
                 "success": true,
                 "elections": [
                     {
-                        "electionId": "adc68d36-d32f-4f68-ab8e-02ea5abee516",
+                        "election_id": "5ec8adf06e38137ff2e5876f",
                         "title": "My election #1",
                         "description": "My demo election!",
                         "options": [],
@@ -284,7 +306,7 @@ This endpoint deals with all elections data currently in the system.
                         "deleted": false
                     },
                     {
-                        "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5",
+                        "election_id": "5ec8adf06e38137ff2e5876e",
                         "title": "My election #2",
                         "description": "A custom election I made",
                         "options": ["Option 1", "Option 2"],
@@ -295,7 +317,7 @@ This endpoint deals with all elections data currently in the system.
                         "deleted": true
                     },
                     {
-                        "electionId": "7d69233c-b380-4c14-be57-2638bd9a4081",
+                        "election_id": "5ec8adf06e38137ff2e5876d",
                         "title": "My election #3",
                         "description": "An election to end all elections?",
                         "options": ["Vanilla", "Chocolate"],
@@ -306,6 +328,17 @@ This endpoint deals with all elections data currently in the system.
                         "deleted": false
                     }
                 ]
+            }
+
++ Response 400 (application/json)
+
+    + Attributes (object)
+        + error (string) - Why the request failed.
+
+    + Body
+
+            {
+                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
             }
 
 + Response 401 (application/json)
@@ -375,13 +408,13 @@ This endpoint deals with all elections data currently in the system.
 
     + Attributes (object)
         + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + electionId: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The GUID of the newly created election.
+        + election_id: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The unique MongoDB id of the newly created election.
 
     + Body
 
             {
                 "success": true,
-                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5"
+                "election_id": "5ec8adf06e38137ff2e5876c"
             }
 
 + Response 400 (application/json)
@@ -432,12 +465,12 @@ This endpoint deals with all elections data currently in the system.
                 "contrived": true
             }
 
-## Election endpoint [/election/{electionId}]
+## Election endpoint [/election/{election_id}]
 
-This endpoint returns an expanded data object describing the election specified via **electionId**.
+This endpoint returns an expanded data object describing the election specified via **election_id**.
 
 + Parameters
-    + electionId (string) - The GUID of the election targeted by some operation.
+    + election_id (string) - The unique MongoDB id of the election targeted by some operation.
 
 ### Return data about an election [GET]
 
@@ -456,7 +489,7 @@ This endpoint returns an expanded data object describing the election specified 
 
             {
                 "success": true,
-                "electionId": "ac166a46-8a89-4556-8fa0-7e6919a536b5",
+                "election_id": "5ec8adf06e38137ff2e5876b",
                 "title": "My election #2",
                 "description": "A custom election I made",
                 "options": ["Option 1", "Option 2"],
@@ -663,12 +696,12 @@ This endpoint returns an expanded data object describing the election specified 
                 "contrived": true
             }
 
-## Voters endpoint [/election/{electionId}/voters]
+## Voters endpoint [/election/{election_id}/voters]
 
 This endpoint deals with an election's mappings between voter IDs and rankings (votes).
 
 + Parameters
-    + electionId (string) - The GUID of the election targeted by some operation.
+    + election_id (string) - The unique MongoDB id of the election targeted by some operation.
 
 ### Return an election's mapping of voters to rankings [GET]
 
@@ -682,17 +715,17 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
     + Attributes (object)
         + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + votes: `{"voterId":"1","ranking":["Biden", "Sanders"]}`,`{"voterId":"2","ranking":["Sanders", "Biden"]}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
+        + votes: `{"voter_id":"1","ranking":["Biden", "Sanders"]}`,`{"voter_id":"2","ranking":["Sanders", "Biden"]}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
 
     + Body
 
             {
                 "success": true,
                 "votes": [
-                    {"voterId":"1","ranking":["Biden", "Warren", "Sanders"]},
-                    {"voterId":"2","ranking":["Sanders", "Warren", "Biden"]},
-                    {"voterId":"3","ranking":["Warren", "Sanders", "Biden"]},
-                    {"voterId":"4","ranking":["Warren", "Biden", "Sanders"]}
+                    {"voter_id":"1","ranking":["Biden", "Warren", "Sanders"]},
+                    {"voter_id":"2","ranking":["Sanders", "Warren", "Biden"]},
+                    {"voter_id":"3","ranking":["Warren", "Sanders", "Biden"]},
+                    {"voter_id":"4","ranking":["Warren", "Biden", "Sanders"]}
                 ]
             }
 
@@ -745,9 +778,9 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
             {
                 "votes": [
-                    {"voterId": "voter1@email.com", "ranking": ["Vanilla", "Chocolate"]},
-                    {"voterId": "voter2@email.com", "ranking": ["Chocolate", "Vanilla"]},
-                    {"voterId": "voter3@email.com", "ranking": ["Vanilla", "Chocolate"]}
+                    {"voter_id": "voter1@email.com", "ranking": ["Vanilla", "Chocolate"]},
+                    {"voter_id": "voter2@email.com", "ranking": ["Chocolate", "Vanilla"]},
+                    {"voter_id": "voter3@email.com", "ranking": ["Vanilla", "Chocolate"]}
                 ]
             }
 
@@ -825,7 +858,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
 ### Election (object)
 
-+ electionId: `afdf5513-ab35-4fbd-ad52-c22dbc899d31` (string) - GUID representing the election. Generated automatically by the server.
++ election_id: `5ec8adf06e38137ff2e58769` (string) - unique MongoDB id representing the election. Generated automatically by the server.
 + title: My Election (string) - Title of the election.
 + description: Election description (string) - Description of the election.
 + options: `"Biden"`,`"Sanders"` (array[string]) - Array of options voters are allowed to select from.
@@ -837,5 +870,5 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
 ### Vote (object)
 
-+ voterId: myemail@me.com (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be.
-+ ranking: `"Biden"`,`"Sanders"` (array[string]) - Whichever ranked choices the voter represented by `voterId` made when casting their vote. From left to right, the order of the array represents the ranking users' chose from most preferred to least preferred.
++ voter_id: myemail@me.com (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be.
++ ranking: `"Biden"`,`"Sanders"` (array[string]) - Whichever ranked choices the voter represented by `voter_id` made when casting their vote. From left to right, the order of the array represents the ranking users' chose from most preferred to least preferred.

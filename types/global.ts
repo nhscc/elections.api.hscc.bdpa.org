@@ -1,38 +1,10 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import type { NextParamsRRWithSession } from 'multiverse/simple-auth-session'
+import type { HttpJsonResponse5xx } from './_shared'
 import type { ObjectId } from 'mongodb'
 
-export type GenericObject<T=unknown> = Record<string, T>;
+// ? Access types shared between projects from `types/global` too
+export * from './_shared';
 
-export type HTTPStatusCode =
-      100 | 101 | 102
-
-    | 200 | 201 | 202 | 203 | 204 | 205 | 206 | 207 | 208 | 226
-    | 300 | 301 | 302 | 303 | 304 | 305 | 306 | 307 | 308
-
-    | 400 | 401 | 402 | 403 | 404 | 405 | 406 | 407 | 408 | 409 | 410 | 411 | 412 | 413 | 414 | 415 | 416 | 417 | 418
-    | 419 | 420 | 420 | 422 | 423 | 424 | 424 | 425 | 426 | 428 | 429 | 431 | 444 | 449 | 450 | 451 | 451 | 494 | 495
-    | 496 | 497 | 499
-
-    | 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 509 | 510 | 511 | 598 | 599;
-
-export type NextParamsResponseQuery<T = object> = {
-    res: NextApiResponse<T>;
-    query: object;
-};
-
-export type NextParamsResponseStatus<T = object> = {
-    res: NextApiResponse<T>;
-    status: HTTPStatusCode;
-};
-
-export type NextParamsRR<T = object> = {
-    req: NextApiRequest;
-    res: NextApiResponse<T>;
-};
-
-export type NextParamsRRQWithSession = NextParamsRRWithSession & { query: object };
-export type NextParamsResponseStatusQuery = NextParamsResponseQuery & NextParamsResponseStatus;
+// * Project-specific Types * \\
 
 export type Option = string;
 
@@ -46,15 +18,38 @@ export type PrimitiveElection = {
     deleted: boolean;
 };
 
+export type NewElection = {
+    title: string;
+    description?: string;
+    options?: Option[];
+    opens: number;
+    closes: number;
+};
+
+export type PatchElection = {
+    _id: ObjectId;
+    title?: string;
+    description?: string;
+    options?: Option[];
+    opens?: number;
+    closes?: number;
+    deleted?: boolean;
+};
+
 export type InternalElection = PrimitiveElection & {
     _id: ObjectId;
     owner: string;
 };
 
-export type Election = PrimitiveElection & {
+export type PublicElection = PrimitiveElection & {
     election_id: ObjectId;
     owned: boolean;
 };
+
+export type ApiKey = {
+    owner: string;
+    key: string;
+}
 
 export type Ranking = {
     voter_id: string;
@@ -68,10 +63,27 @@ export type ElectionRankings = {
     rankings: Rankings;
 };
 
-export type ErrorJSON = {
-    error: string;
+export type RequestLogEntry = {
+    _id: ObjectId;
+    ip: string;
+    key: string | null;
+    route: string;
+    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    time: number;
+    response: number;
 };
 
-export type SuccessJSON = { success: true };
-export type HTTP555 = ErrorJSON & { contrived: true };
-export type HTTP429 = ErrorJSON & { retryAfter: number };
+export type LimitedEntry = {
+    _id: ObjectId;
+    until: number;
+    ip?: string;
+    key?: string;
+};
+
+export type Metadata = {
+    upcomingElections: number;
+    openElections: number;
+    closedElections: number;
+};
+
+export type HTTP555 = HttpJsonResponse5xx & { contrived: true };
