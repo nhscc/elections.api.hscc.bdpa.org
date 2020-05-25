@@ -5,11 +5,11 @@ import { getEnv } from '../env'
 import { populateEnv } from 'universe/dev-utils'
 
 import type{ NextApiRequest, NextApiResponse } from 'next';
-import { InternalElection, NewElection, PatchElection, Rankings, PublicElection } from 'types/global'
+import { InternalElection, NewElection, PatchElection, VoterRankings, PublicElection } from 'types/global'
 import randomInt from 'random-int';
 
 populateEnv();
-jest.setTimeout(10000);
+jest.setTimeout(1000000);
 
 const { getHydratedData, getDb } = setupJest();
 
@@ -155,7 +155,7 @@ describe('universe/backend', () => {
             })).toArray()).toEqual([]);
         });
 
-        it('rejects on non-positive/too large limit or non-existent after', async () => {
+        it('rejects on non-positive/too large limit or invalid after', async () => {
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: getEnv().MAX_LIMIT + 1 })).toReject();
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: 0 })).toReject();
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: -1 })).toReject();
@@ -181,8 +181,6 @@ describe('universe/backend', () => {
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: null })).toReject();
             // @ts-ignore
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: false })).toReject();
-            // @ts-ignore
-            expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: new ObjectId() })).toReject();
             // @ts-ignore
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, after: 0 })).toReject();
             // @ts-ignore
@@ -262,8 +260,8 @@ describe('universe/backend', () => {
                 title: 'New election',
                 description: 'This is a new election',
                 options: ['1', '2'],
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7
             };
 
             // ? Bad props should be ignored
@@ -293,26 +291,58 @@ describe('universe/backend', () => {
             expect(returnedElection).toEqual(election);
         });
 
+        it('does not allow invalid opens/closes times', async () => {
+            const newElection: NewElection = {
+                title: 'New election',
+                description: 'This is a new election',
+                options: ['1', '2'],
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
+            };
+
+            const { opens, closes, ...badElection } = newElection;
+
+            expect(Backend.upsertElection({ election: { ...newElection, opens: 100, closes: 200 }, key: Backend.NULL_KEY })).toReject();
+            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            // @ts-ignore
+            expect(Backend.upsertElection({ election: { ...badElection, opens }, key: Backend.NULL_KEY })).toReject();
+            // @ts-ignore
+            expect(Backend.upsertElection({ election: { ...badElection, closes }, key: Backend.NULL_KEY })).toReject();
+            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            expect(Backend.upsertElection({ election: { ...badElection, closes: 100, opens }, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: { ...badElection, opens: 100, closes }, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: { ...badElection, opens: closes, closes: opens }, key: Backend.NULL_KEY })).toReject();
+        });
+
         it('updates an existing election when election_id already exists', async () => {
             const newElection: NewElection = {
                 title: 'New election',
                 description: 'This is a new election',
                 options: ['1', '2'],
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             };
 
             const election1 = await Backend.upsertElection({ election: newElection, key: Backend.NULL_KEY });
+
+            expect(typeof election1._id === 'undefined').toBeFalse();
+
             const election2 = await Backend.upsertElection({
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                // @ts-ignore
-                election: { ...newElection, created: 100, opens: 200, closes: 300 },
+                electionId: election1._id,
+                election: {
+                    ...newElection,
+                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                    // @ts-ignore
+                    created: 100,
+                    opens: newElection.opens + 200,
+                    closes: newElection.closes + 300
+                },
                 key: Backend.NULL_KEY
             });
 
             expect(election1._id).toEqual(election2._id);
             expect(election1.opens).toEqual(newElection.opens);
-            expect(election2.opens).toEqual(200);
+            expect(election2.opens).toEqual(newElection.opens + 200);
 
             const returnedElection = await Backend.getInternalElection(election1._id || new ObjectId('bad'));
 
@@ -320,8 +350,8 @@ describe('universe/backend', () => {
             expect(returnedElection.created).toEqual(election1.created);
             // ? Bad props should be ignored!
             expect(returnedElection.created).not.toEqual(100);
-            expect(returnedElection.opens).toEqual(200);
-            expect(returnedElection.closes).toEqual(300);
+            expect(returnedElection.opens).toEqual(newElection.opens + 200);
+            expect(returnedElection.closes).toEqual(newElection.closes + 300);
         });
 
         it('rejects when missing necessary params', async () => {
@@ -330,19 +360,19 @@ describe('universe/backend', () => {
             const newElection1: NewElection = {
                 description: 'This is a new election',
                 options: ['1', '2'],
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7
             };
             // @ts-ignore
             const newElection2: NewElection = {
                 title: 'New election',
                 description: 'This is a new election',
-                closes: Date.now() + 10000
+                closes: Date.now() + 10**7
             };
             // @ts-ignore
             const newElection3: NewElection = {
                 title: 'New election',
-                opens: Date.now() + 1000,
+                opens: Date.now() + 10**6,
             };
             /* eslint-enable @typescript-eslint/ban-ts-ignore */
 
@@ -354,7 +384,7 @@ describe('universe/backend', () => {
 
     describe('::isKeyAuthentic', () => {
         it('returns expected result on valid and invalid keys', async () => {
-            expect(await Backend.isKeyAuthentic('')).toEqual(false);
+            expect(Backend.isKeyAuthentic('')).toReject();
             expect(await Backend.isKeyAuthentic('d68d8b5e-b926-4925-ac77-1013e56b8c81')).toEqual(false);
             expect(await Backend.isKeyAuthentic(getHydratedData().keys[0].key)).toEqual(true);
         });
@@ -381,21 +411,56 @@ describe('universe/backend', () => {
         it("::replaceRankings replaces an election's rankings data, returned by ::getRankings", async () => {
             const election = getHydratedData().elections[0];
             const oldRankings = await Backend.getRankings(election._id);
-            const newRankings = [{ voter_id: '1', rankings: election.options }];
+            const newRankings = [{ voter_id: '1', ranking: election.options }];
 
-            await Backend.replaceRankings(election._id, newRankings);
+            await Backend.replaceRankings({ electionId: election._id, rankings: newRankings });
 
             expect(oldRankings.length > 0).toEqual(true);
             expect(await Backend.getRankings(election._id)).toEqual(newRankings);
 
-            await Backend.replaceRankings(election._id, oldRankings);
-
+            await Backend.replaceRankings({ electionId: election._id, rankings: oldRankings });
             expect(await Backend.getRankings(election._id)).toEqual(oldRankings);
+
+            await Backend.replaceRankings({ electionId: election._id, rankings: [] });
+            expect(await Backend.getRankings(election._id)).toEqual([]);
+
+            const newerRankings = [{ voter_id: '1', ranking: [] }, { voter_id: '2', ranking: [] }];
+
+            await Backend.replaceRankings({ electionId: election._id, rankings: newerRankings });
+            expect(await Backend.getRankings(election._id)).toEqual(newerRankings);
+
+            const newestRankings = [...oldRankings.slice(1)];
+
+            await Backend.replaceRankings({ electionId: election._id, rankings: newestRankings });
+            expect(await Backend.getRankings(election._id)).toEqual(newestRankings);
         });
 
-        it('::replaceRankings and ::getRankings throw if election_id does not exist', async () => {
-            expect(Backend.replaceRankings(new ObjectId(), [])).toReject();
+        it('::replaceRankings and ::getRankings rejects if election_id does not exist', async () => {
+            expect(Backend.replaceRankings({ electionId: new ObjectId(), rankings: [] })).toReject();
             expect(Backend.getRankings(new ObjectId())).toReject();
+        });
+
+        it('::replaceRankings rejects on illegal options', async () => {
+            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [1] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [1, 2] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{}] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{}, {}] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ a: 1 }, { b: 2 }] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: 1 }] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1' }] })).toReject();
+            // @ts-ignore
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: [1] }] })).toReject();
+            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: ['1'] }] })).toReject();
+            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: ['1', '2'] }] })).toReject();
         });
     });
 
@@ -405,14 +470,14 @@ describe('universe/backend', () => {
                 title: 'New election',
                 description: 'This is a new election',
                 options: ['1', '2'],
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             };
 
             const newElection2: NewElection = {
                 title: 'New election',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             };
 
             expect(await Backend.validateElectionData(newElection1)).toEqual(true);
@@ -424,8 +489,8 @@ describe('universe/backend', () => {
             const electionPatch2: PatchElection = {
                 _id: new ObjectId(),
                 title: 'New election',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             };
 
             const electionPatch3: PatchElection = {
@@ -448,68 +513,68 @@ describe('universe/backend', () => {
             const newElection0 = {} as unknown as NewElection;
 
             const newElection1 = {
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             } as unknown as NewElection;
 
             const newElection2 = {
                 title: 'My new election!',
                 description: 'This is a new election',
                 options: ['1', '2'],
-                closes: Date.now() + 10000,
+                closes: Date.now() + 10**7,
             } as unknown as NewElection;
 
             const newElection3 = {
                 title: 'My new election!',
-                opens: Date.now() + 1000,
+                opens: Date.now() + 10**6,
             } as unknown as NewElection;
 
             const newElection4 = {
                 title: 'My new election!',
                 created: 0,
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7
             } as unknown as NewElection;
 
             const newElection4b = {
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 deleted: false
             } as unknown as NewElection;
 
             const newElection5 = {
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 owned: true
             } as unknown as NewElection;
 
             const newElection6 = {
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 owner: Backend.NULL_KEY
             } as unknown as NewElection;
 
             const newElection7 = {
                 election_id: new ObjectId(),
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             } as unknown as NewElection;
 
             const newElection8 = {
                 _id: new ObjectId(),
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             } as unknown as NewElection;
 
             const newElection9 = {
                 title: 'My new election!',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 blahblahlblah: true,
             } as unknown as NewElection;
 
@@ -562,8 +627,8 @@ describe('universe/backend', () => {
                 title: 'New election',
                 description: 'This is a new election',
                 options: [...Array(getEnv().MAX_OPTIONS_PER_ELECTION + 1)].map((_, ndx) => ndx.toString()),
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             };
 
             expect(Backend.validateElectionData(newElection)).toReject();
@@ -600,68 +665,68 @@ describe('universe/backend', () => {
         it('rejects if any of the values are the incorrect type (number/string)', async () => {
             const newElection1 = {
                 title: null,
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             } as unknown as InternalElection;
 
             const newElection2 = {
                 title: '',
                 opens: null,
-                closes: Date.now() + 10000,
+                closes: Date.now() + 10**7,
             } as unknown as InternalElection;
 
             const newElection3 = {
                 title: '',
-                opens: Date.now() + 1000,
+                opens: Date.now() + 10**6,
                 closes: '10000',
             } as unknown as InternalElection;
 
             const newElection4 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 options: null
             } as unknown as InternalElection;
 
             const newElection5 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 options: [1, 2]
             } as unknown as InternalElection;
 
             const newElection6 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 options: [true]
             } as unknown as InternalElection;
 
             const newElection7 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 options: [undefined]
             } as unknown as InternalElection;
 
             const newElection8 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 description: null
             } as unknown as InternalElection;
 
             const newElection9 = {
                 title: '',
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
                 description: undefined
             } as unknown as InternalElection;
 
             const newElection10 = {
                 title: undefined,
-                opens: Date.now() + 1000,
-                closes: Date.now() + 10000,
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
             } as unknown as InternalElection;
 
             expect(Backend.validateElectionData(newElection1)).toReject();
@@ -691,20 +756,20 @@ describe('universe/backend', () => {
     describe('::validateRankingsData', () => {
         it('returns true on valid rankings and false on invalid rankings', async () => {
             const election = getHydratedData().elections[0];
-            const newRankings1: Rankings = [];
+            const newRankings1: VoterRankings = [];
 
-            const newRankings2: Rankings = [
+            const newRankings2: VoterRankings = [
                 { voter_id: 'my-userid1', ranking: election.options },
             ];
 
-            const newRankings3: Rankings = [
+            const newRankings3: VoterRankings = [
                 { voter_id: 'my-userid1', ranking: election.options },
                 { voter_id: 'my-userid2', ranking: election.options },
                 { voter_id: 'my-userid3', ranking: election.options },
             ];
 
-            expect(Backend.validateRankingsData(election._id, null as unknown as Rankings)).toReject();
-            expect(Backend.validateRankingsData(election._id, false as unknown as Rankings)).toReject();
+            expect(Backend.validateRankingsData(election._id, null as unknown as VoterRankings)).toReject();
+            expect(Backend.validateRankingsData(election._id, false as unknown as VoterRankings)).toReject();
             expect(Backend.validateRankingsData(election._id, newRankings1)).toBe(true);
             expect(Backend.validateRankingsData(election._id, newRankings2)).toBe(true);
             expect(Backend.validateRankingsData(election._id, newRankings3)).toBe(true);

@@ -1,6 +1,7 @@
 import { MongoClient, Db, ObjectId } from 'mongodb'
 import { NULL_KEY } from 'universe/backend'
-import { initialize, getDb, setDb } from 'universe/backend/db'
+import { getDb, setDb, destroyDb, initializeDb } from 'universe/backend/db'
+import { MongoMemoryServer } from 'mongodb-memory-server'
 import { getEnv } from 'universe/backend/env'
 import { populateEnv } from 'universe/dev-utils'
 import * as Time from 'multiverse/relative-random-time'
@@ -162,10 +163,11 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
 
         await electionsDb.insertMany(newData.elections);
         const getArrayLength = uniqueRandomArray([0, 1, 2, randomInt(3, 6), randomInt(10, 20), 100, 1000]);
+        let first = true;
 
         await rankingsDb.insertMany(newData.elections.map(election => ({
             election_id: election._id,
-            rankings: [...Array(getArrayLength())].map((_, id) => ({
+            rankings: [...Array(first ? ((first = false), 10) : getArrayLength())].map((_, id) => ({
                 voter_id: randomInt(id * 3, (id + 1) * 3 - 1).toString(),
                 ranking: shuffle(election.options)
             }))
@@ -197,40 +199,34 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export function setupJest() {
+    const server = new MongoMemoryServer();
     let connection: MongoClient;
     let hydratedData: DummyDbData;
 
     beforeAll(async () => {
-        connection = await MongoClient.connect(getEnv().MONGODB_TEST_URI, { useUnifiedTopology: true });
+        connection = await MongoClient.connect(await server.getUri(), { useUnifiedTopology: true });
         const db = connection?.db();
 
         if(!db)
-            throw new Error('unable to connect to database (1)');
+            throw new Error('unable to connect to database');
 
         setDb(db);
     });
 
     beforeEach(async () => {
-        const dbName = getEnv().MONGODB_TEST_URI.split('/').slice(-1)[0];
-
-        await (await getDb()).dropDatabase();
-
-        if(!dbName)
-            throw new Error('database name resolution failed in Jest test');
-
-        const db = connection.db(dbName);
-
-        if(!db)
-            throw new Error('unable to connect to database (2)');
-
-        await initialize(db, { reinitialize: true });
+        const db = await getDb();
+        await initializeDb(db);
         hydratedData = await hydrateDb(db, unhydratedDummyDbData);
-
-        setDb(db);
     });
 
+    afterEach(async () => {
+        const db = await getDb();
+        await destroyDb(db);
+    })
+
     afterAll(async () => {
-        await new Promise(ok => setTimeout(() => (connection.isConnected() && connection.close(), ok()), 750));
+        connection.isConnected() && await connection.close();
+        await server.stop();
     });
 
     return {

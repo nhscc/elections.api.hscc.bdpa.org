@@ -111,6 +111,7 @@
     "gulp-tap": "^2.0.0",
     "jest": "^26.0.1",
     "jest-extended": "^0.11.5",
+    "mongodb-memory-server": "^6.6.1",
     "random-int": "^2.0.1",
     "source-map-support": "^0.5.19",
     "typescript": "^3.9.3",

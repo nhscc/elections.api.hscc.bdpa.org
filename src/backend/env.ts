@@ -6,7 +6,6 @@ export function getEnv(silent=false) {
     const env = {
         NODE_ENV: process.env.NODE_ENV || process.env.BABEL_ENV || process.env.APP_ENV || 'unknown',
         MONGODB_URI: (process.env.MONGODB_URI || '').toString(),
-        MONGODB_TEST_URI: (process.env.MONGODB_TEST_URI || '').toString(),
         MAX_LIMIT: parseInt(process.env.MAX_LIMIT ?? '-Infinity'),
         LIMIT_OVERRIDE: parseInt(process.env.LIMIT_OVERRIDE ?? '-Infinity'),
         DISABLE_RATE_LIMITS: !!process.env.DISABLE_RATE_LIMITS && process.env.DISABLE_RATE_LIMITS !== 'false',
@@ -33,7 +32,6 @@ export function getEnv(silent=false) {
     //     console.info(`---
     // NODE_ENV: ${NODE_ENV}
     // env.MONGODB_URI: ${env.MONGODB_URI}
-    // env.MONGODB_TEST_URI: ${env.MONGODB_TEST_URI}
     // env.MAX_LIMIT: ${env.MAX_LIMIT}
     // env.LIMIT_OVERRIDE: ${env.LIMIT_OVERRIDE}
     // env.DISABLE_RATE_LIMITS: ${env.DISABLE_RATE_LIMITS}
@@ -50,7 +48,6 @@ export function getEnv(silent=false) {
     // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
     // @ts-ignore
     if(env.NODE_ENV == 'unknown' || (isServer() && env.MONGODB_URI === '') ||
-       (env.NODE_ENV == 'test' && env.MONGODB_TEST_URI === '') ||
        _mustBeGtZero.some(v => !isNumber(v) || v < 0)) {
         throw new Error('illegal environment detected, check environment variables');
     }

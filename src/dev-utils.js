@@ -15,7 +15,9 @@ if(!Array.isArray(expectedEnvVariables))
  * @param {string} variable
  */
 const throwEnvError = variable => {
-    throw new Error(`${variable} is not defined. Copy dist.env --> .env or or define ${variable} in the environment.`);
+    throw new Error(
+        `${variable} is not defined. Copy the "dist.env" file to ".env" or define ${variable} in the environment.`
+    );
 };
 
 module.exports = {

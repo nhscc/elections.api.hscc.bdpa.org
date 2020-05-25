@@ -42,6 +42,16 @@ export class ApiKeyTypeError extends AppError {
     }
 }
 
+export class RankingsTypeError extends AppError {
+    constructor(...args: any[]) {
+        const message = !!args[0]
+            ? `encountered illegal ranking \`${args[0]}\``
+            : 'one or more illegal rankings encountered';
+
+        super(...[message, ...args.slice(1)]);
+    }
+}
+
 export class LimitTypeError extends AppError {
     constructor(...args: any[]) {
         const message = typeof args[0] == 'number'

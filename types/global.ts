@@ -51,16 +51,16 @@ export type ApiKey = {
     key: string;
 }
 
-export type Ranking = {
+export type VoterRanking = {
     voter_id: string;
     ranking: Option[];
 };
 
-export type Rankings = Ranking[];
+export type VoterRankings = VoterRanking[];
 
 export type ElectionRankings = {
     election_id: ObjectId;
-    rankings: Rankings;
+    rankings: VoterRankings;
 };
 
 export type RequestLogEntry = {
