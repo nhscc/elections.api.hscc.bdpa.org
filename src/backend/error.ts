@@ -3,6 +3,7 @@ export class GuruMeditationError extends AppError {}
 export class ValidationError extends AppError {}
 
 export class UpsertFailedError extends AppError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = args[0] || 'data upsert failed';
         super(...[message, ...args.slice(1)]);
@@ -10,6 +11,7 @@ export class UpsertFailedError extends AppError {
 }
 
 export class NotFoundError extends AppError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = !!args[0]
             ? `item ${args[0]} does not exist or was not found`
@@ -20,6 +22,7 @@ export class NotFoundError extends AppError {
 }
 
 export class TimeTypeError extends UpsertFailedError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = args[0] || 'invalid `opens` and/or `closes` properties (bad time data?)';
         super(...[message, ...args.slice(1)]);
@@ -27,6 +30,7 @@ export class TimeTypeError extends UpsertFailedError {
 }
 
 export class IdTypeError extends AppError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = !!args[0]
             ? `expected valid ObjectId instance, got "${args[0]}" instead`
@@ -37,12 +41,13 @@ export class IdTypeError extends AppError {
 }
 
 export class ApiKeyTypeError extends AppError {
-    constructor(...args: any[]) {
+    constructor() {
         super('invalid API key encountered');
     }
 }
 
 export class RankingsTypeError extends AppError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = !!args[0]
             ? `encountered illegal ranking \`${args[0]}\``
@@ -53,6 +58,7 @@ export class RankingsTypeError extends AppError {
 }
 
 export class LimitTypeError extends AppError {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     constructor(...args: any[]) {
         const message = typeof args[0] == 'number'
             ? `\`limit\` must be a number, got ${args[0]} instead`
