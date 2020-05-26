@@ -1,4 +1,4 @@
-import { setupJest } from './db'
+import { setupJest } from 'universe/__test__/db'
 
 const { getDb } = setupJest();
 void getDb;

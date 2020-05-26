@@ -1,4 +1,4 @@
-import { setupJest } from 'universe/backend/__test__/db'
+import { setupJest } from 'universe/__test__/db'
 
 setupJest();
 

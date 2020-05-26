@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import * as Backend from 'universe/backend'
-import { setupJest, unhydratedDummyDbData } from './db'
-import { getEnv } from '../env'
+import { setupJest, unhydratedDummyDbData } from 'universe/__test__/db'
+import { getEnv } from 'universe/backend/env'
 import { populateEnv } from 'universe/dev-utils'
 
 import type{ NextApiRequest, NextApiResponse } from 'next';
