@@ -1,7 +1,9 @@
-import { ObjectId } from 'mongodb'
+import { ObjectId, WithId, AggregationCursor } from 'mongodb'
 import { getEnv } from 'universe/backend/env'
 import { getDb } from 'universe/backend/db'
 import { isUndefined, isArray } from 'util'
+import { getClientIp } from 'request-ip'
+import { NextApiRequest } from 'next'
 
 import {
     LimitTypeError,
@@ -11,34 +13,36 @@ import {
     NotFoundError,
     UpsertFailedError,
     GuruMeditationError,
-    RankingsTypeError,
+    ValidationError,
 } from 'universe/backend/error'
 
-import type {
+import {
     Metadata,
     PublicElection,
     InternalElection,
     NewElection,
     PatchElection,
     ElectionRankings,
-    VoterRankings,
-    VoterRanking
+    VoterRanking,
+    NextParamsRR,
+    RequestLogEntry,
+    LimitedEntry,
+    InDbElection,
+    ApiKey
 } from 'types/global'
 
-export type UpsertNewElectionParams = {
-    election: NewElection;
-    key: string;
-};
+let requestCounter = 0;
 
-export type UpsertPatchElectionParams = {
-    election: PatchElection;
-    electionId: ObjectId;
-};
-
-export const NULL_KEY = '00000000-0000-0000-0000-000000000000';
 export const DEFAULT_RESULT_LIMIT = 15;
+export const NULL_KEY = '00000000-0000-0000-0000-000000000000';
 
-export async function getElectionMetadata() {
+export type ValEleDatParams = NewElection | PatchElection;
+export type UpsNewEleParams = { election: NewElection; key: string };
+export type UpsPatEleParams = { election: PatchElection; electionId: ObjectId };
+export type EleVotRanParams = { electionId: ObjectId; rankings: VoterRanking[] };
+export type GetPubEleParams = { limit?: number; after?: ObjectId | null; key: string };
+
+export async function getElectionMetadata(): Promise<Metadata> {
     const now = Date.now();
 
     const meta: Metadata = {
@@ -49,7 +53,7 @@ export async function getElectionMetadata() {
 
     return {
         ...meta,
-        ...await (await getDb()).collection('elections').aggregate([
+        ...await (await getDb()).collection<InDbElection>('elections').aggregate([
             {
                 $group: {
                     _id: null,
@@ -80,7 +84,7 @@ export async function getElectionMetadata() {
     } as Metadata;
 }
 
-export async function getPublicElections(opts: { limit?: number; after?: ObjectId | null; key: string }) {
+export async function getPublicElections(opts: GetPubEleParams): Promise<AggregationCursor<PublicElection>> {
     const { limit, after, key } = { limit: DEFAULT_RESULT_LIMIT, after: null, ...opts };
 
     if(typeof limit != 'number' || limit <= 0 || limit > getEnv().MAX_LIMIT)
@@ -92,7 +96,7 @@ export async function getPublicElections(opts: { limit?: number; after?: ObjectI
     if(!key || typeof key != 'string')
         throw new ApiKeyTypeError();
 
-    return await (await getDb()).collection('elections').aggregate<PublicElection>([
+    return await (await getDb()).collection<InDbElection>('elections').aggregate<PublicElection>([
         ...(after ? [{ $match: { _id: { $gt: new ObjectId(after) }}}] : []),
         { $limit: limit },
         {
@@ -105,7 +109,7 @@ export async function getPublicElections(opts: { limit?: number; after?: ObjectI
     ]);
 }
 
-export async function getPublicElection(opts: { electionId: ObjectId; key: string }) {
+export async function getPublicElection(opts: { electionId: ObjectId; key: string }): Promise<PublicElection> {
     const { electionId, key } = opts;
 
     if(!key || typeof key != 'string')
@@ -114,7 +118,7 @@ export async function getPublicElection(opts: { electionId: ObjectId; key: strin
     if(!(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
-    const elections = await (await (await getDb()).collection('elections').aggregate<PublicElection>([
+    const elections = await (await (await getDb()).collection<InDbElection>('elections').aggregate<PublicElection>([
         { $match: { _id: electionId }},
         { $limit: 1 },
         {
@@ -132,46 +136,103 @@ export async function getPublicElection(opts: { electionId: ObjectId; key: strin
     return elections[0];
 }
 
-export async function getInternalElection(electionId: ObjectId) {
+export async function getInternalElection(electionId: ObjectId): Promise<InternalElection> {
     if(!(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
-    const election = await (await getDb()).collection('elections').find<InternalElection>({ _id: electionId }).next();
+    const e = await (await getDb()).collection<InDbElection>('elections').find({ _id: electionId }).next();
 
-    if(!election)
+    if(!e)
         throw new NotFoundError(electionId);
 
-    return election;
+    const { _id: election_id, ...election } = e;
+
+    return { election_id, ...election };
 }
 
-export async function doesElectionExist(electionId: ObjectId) {
+export async function doesElectionExist(electionId: ObjectId): Promise<boolean> {
     if(!(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
-    return !!await (await getDb()).collection('elections').find({ _id: electionId }).limit(1).count();
-
+    return !!await (await getDb()).collection<InDbElection>('elections').find({ _id: electionId }).limit(1).count();
 }
+
+type PartialInternalElection = Partial<InternalElection> & { election_id: ObjectId };
 
 // TODO: document that either 1) NewElection or 2) PatchElection, electionId,
 // TODO: key are the two required sets of parameters (overloaded)
-export async function upsertElection(opts: UpsertNewElectionParams): Promise<Partial<InternalElection>>
-export async function upsertElection(opts: UpsertPatchElectionParams): Promise<Partial<InternalElection>>
-export async function upsertElection(opts: UpsertNewElectionParams | UpsertPatchElectionParams): Promise<Partial<InternalElection>> {
-    const { election: electionData, electionId, key } = opts as UpsertNewElectionParams & UpsertPatchElectionParams;
-
-    if(electionId && !(electionId instanceof ObjectId))
-        throw new IdTypeError(electionId);
-
-    if(!electionId && (!key || typeof key != 'string'))
-        throw new ApiKeyTypeError();
-
-    const { title, description, options, opens, closes, ...rest } = electionData;
-
+export async function upsertElection(opts: UpsNewEleParams): Promise<PartialInternalElection>
+export async function upsertElection(opts: UpsPatEleParams): Promise<PartialInternalElection>
+export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): Promise<PartialInternalElection> {
+    const { election: electionData, electionId, key } = opts as UpsNewEleParams & UpsPatEleParams;
     const newData: Partial<InternalElection> = {};
 
-    if(!electionId) {
-        if(!title || !opens || !closes)
-            throw new UpsertFailedError();
+    if(!isUndefined(electionData.title) && (!electionData.title || typeof electionData.title != 'string'))
+        throw new ValidationError('invalid property "title"');
+
+    if(!isUndefined(electionData.description) && typeof electionData.title != 'string')
+        throw new ValidationError('invalid property "description"');
+
+    if(!isUndefined(electionData.options) && (
+      !isArray(electionData.options) || electionData.options.some(o => typeof o != 'string') ||
+      electionData.options.length > getEnv().MAX_OPTIONS_PER_ELECTION)) {
+        throw new ValidationError('invalid property "options"');
+      }
+
+    if(!isUndefined(electionData.opens) && typeof electionData.opens != 'number')
+        throw new ValidationError('invalid property "opens"');
+
+    if(!isUndefined(electionData.closes) && typeof electionData.closes != 'number')
+        throw new ValidationError('invalid property "closes"');
+
+    if(electionId) {
+        if(!(electionId instanceof ObjectId))
+            throw new IdTypeError(electionId);
+
+        const { title, description, options, opens, closes, deleted, ...rest } = electionData as PatchElection;
+
+        if(Object.keys(rest).length > 0)
+            throw new ValidationError('one or more unexpected properties encountered');
+
+        if(deleted && typeof deleted != 'boolean')
+            throw new ValidationError('invalid property "deleted"');
+
+        if((opens && !closes) || (closes && !opens))
+            throw new TimeTypeError('when updating "opens" or "closes" properties, both must be modified together');
+
+        if(!doesElectionExist(electionId))
+            throw new NotFoundError(electionId);
+
+        title && (newData.title = title);
+        opens && (newData.opens = opens);
+        closes && (newData.closes = closes);
+        description && (newData.description = description);
+        options && (newData.options = options);
+        deleted && (newData.deleted = deleted);
+    }
+
+    else {
+        if(!key || typeof key != 'string')
+            throw new ApiKeyTypeError();
+
+        const { title, description, options, opens, closes, ...rest } = electionData as NewElection;
+
+        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // @ts-ignore
+        if(rest.deleted !== undefined)
+            throw new ValidationError('property "deleted" not allowed here');
+
+        if(Object.keys(rest).length > 0)
+            throw new ValidationError('one or more unexpected properties encountered');
+
+        if(!title)
+            throw new ValidationError('missing property "title"');
+
+        if(!opens)
+            throw new ValidationError('missing property "opens"');
+
+        if(!closes)
+            throw new ValidationError('missing property "closes"');
 
         newData.title = title;
         newData.opens = opens;
@@ -183,27 +244,15 @@ export async function upsertElection(opts: UpsertNewElectionParams | UpsertPatch
         newData.owner = key;
     }
 
-    else {
-        if(!doesElectionExist(electionId))
-            throw new NotFoundError(electionId);
-
-        const { deleted } = rest as Partial<PatchElection>;
-
-        if((opens && !closes) || (closes && !opens))
-            throw new TimeTypeError('when updating `opens` or `closes` properties, both must be modified together');
-
-        title && (newData.title = title);
-        opens && (newData.opens = opens);
-        closes && (newData.closes = closes);
-        description && (newData.description = description);
-        options && (newData.options = options);
-        deleted && (newData.deleted = deleted);
+    if((newData.opens && newData.closes) && (
+      newData.opens >= newData.closes || (newData.created && newData.opens <= newData.created))) {
+        throw new TimeTypeError();
     }
 
-    if((opens && closes) && (opens >= closes || (newData.created && opens <= newData.created)))
-        throw new TimeTypeError();
+    if(Object.keys(newData).length <= 0)
+        throw new UpsertFailedError('empty upserts are not allowed');
 
-    const result = await (await getDb()).collection<InternalElection>('elections').updateOne(
+    const result = await (await getDb()).collection<InDbElection>('elections').updateOne(
         { _id: electionId || new ObjectId() },
         {
             $set: {
@@ -223,54 +272,73 @@ export async function upsertElection(opts: UpsertNewElectionParams | UpsertPatch
     if(!result.upsertedCount && !result.matchedCount)
         throw new GuruMeditationError();
 
-    newData._id = result.upsertedCount ? result.upsertedId._id : electionId;
+    newData.election_id = result.upsertedCount ? result.upsertedId._id : electionId;
 
-    return newData;
+    return newData as PartialInternalElection;
 }
 
-export async function isKeyAuthentic(key: string) {
+export async function isKeyAuthentic(key: string): Promise<boolean> {
     if(!key || typeof key != 'string')
         throw new ApiKeyTypeError();
 
-    return !!await (await getDb()).collection('keys').find({ key }).limit(1).count();
+    return !!await (await getDb()).collection<WithId<ApiKey>>('keys').find({ key }).limit(1).count();
 }
 
-export async function deleteElection(electionId: ObjectId) {
+export async function deleteElection(electionId: ObjectId): Promise<void> {
     if(electionId && !(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
-    return !!await (await getDb()).collection('elections').updateOne({ _id: electionId }, { $set: { deleted: true }});
+    await (await getDb()).collection<InDbElection>('elections').updateOne(
+        { _id: electionId },
+        { $set: { deleted: true }}
+    );
 }
 
-export async function getRankings(electionId: ObjectId) {
+export async function getRankings(electionId: ObjectId): Promise<VoterRanking[]> {
     if(electionId && !(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
-    const electionRankings = await (await getDb()).collection('rankings').find<ElectionRankings>({
+    const rankings = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').find<ElectionRankings>({
         election_id: electionId
     }).next();
 
-    if(!electionRankings)
+    if(!rankings)
         throw new NotFoundError(electionId);
 
-    return electionRankings.rankings;
+    return rankings.rankings;
 }
 
-export async function replaceRankings({ electionId, rankings }: { electionId: ObjectId; rankings: VoterRankings}) {
+export async function replaceRankings({ electionId, rankings }: EleVotRanParams): Promise<void> {
     if(electionId && !(electionId instanceof ObjectId))
         throw new IdTypeError(electionId);
 
     if(!isArray(rankings))
-        throw new RankingsTypeError();
+        throw new ValidationError('invalid voter rankings encountered');
+
+    const maxRanks = getEnv().MAX_RANKINGS_PER_ELECTION;
+
+    if(rankings.length > maxRanks)
+        throw new ValidationError(`too many rankings (max is ${maxRanks}`);
 
     const electionOpts = (await getInternalElection(electionId)).options;
-    const isValidRanking = (voterRanking: VoterRanking) => voterRanking.ranking.every(ranking => electionOpts.includes(ranking));
+    const ids = new Set<string>();
 
-    rankings.every(ranking => {
-        if(!isValidRanking(ranking)) throw new RankingsTypeError(ranking);
+    rankings.forEach(voterRanking => {
+        if(typeof voterRanking.voter_id != 'string' || !voterRanking.voter_id)
+            throw new ValidationError('invalid rankings property "voter_id"');
+
+        if(ids.has(voterRanking.voter_id))
+            throw new ValidationError('illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"');
+
+        ids.add(voterRanking.voter_id);
+
+        if(!isArray(voterRanking.ranking) ||
+          voterRanking.ranking.some(r => typeof r != 'string' || !electionOpts.includes(r)) ||
+          voterRanking.ranking.length > electionOpts.length)
+            throw new ValidationError('invalid rankings property "ranking"');
     });
 
-    const result = await (await getDb()).collection<ElectionRankings>('rankings').updateOne(
+    const result = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').updateOne(
         { election_id: electionId },
         { $set: { rankings }},
         { upsert: true }
@@ -278,4 +346,37 @@ export async function replaceRankings({ electionId, rankings }: { electionId: Ob
 
     if(!result.upsertedCount && !result.matchedCount)
         throw new GuruMeditationError();
+}
+
+// TODO: document that it's okay not to await this function, it's fire and
+// TODO: forget
+export async function addToRequestLog({ req, res }: NextParamsRR): Promise<void> {
+    const logEntry: RequestLogEntry = {
+        ip: getClientIp(req),
+        key: req.headers?.key?.toString() || null,
+        method: req.method || null,
+        route: req.url?.split('/api/').slice(-1)[0] || null,
+        resStatusCode: res.statusCode,
+        time: Date.now()
+    };
+
+    await (await getDb()).collection<WithId<RequestLogEntry>>('request-log').insertOne(logEntry);
+}
+
+export async function isRateLimited(req: NextApiRequest): Promise<boolean> {
+    const ip = getClientIp(req);
+    const key = req.headers?.key?.toString() || null;
+
+    return !!await (await getDb()).collection<WithId<LimitedEntry>>('limited-mview').find({
+        $or: [...(ip ? [{ ip }]: []), ...(key ? [{ key }]: [])]
+    }).limit(1).count();
+}
+
+export function isDueForContrivedError(): boolean {
+    if(++requestCounter >= getEnv().REQUESTS_PER_CONTRIVED_ERROR) {
+        requestCounter = 0;
+        return true;
+    }
+
+    return false;
 }

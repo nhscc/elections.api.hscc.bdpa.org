@@ -1,17 +1,16 @@
 import type { HttpJsonResponse5xx } from './_shared'
-import type { ObjectId } from 'mongodb'
+import type { ObjectId, WithId } from 'mongodb'
 
 // ? Access types shared between projects from `types/global` too
 export * from './_shared';
 
 // * Project-specific Types * \\
 
-export type Option = string;
-
 export type PrimitiveElection = {
+    election_id: ObjectId;
     title: string;
     description: string;
-    options: Option[];
+    options: string[];
     created: number;
     opens: number;
     closes: number;
@@ -21,30 +20,25 @@ export type PrimitiveElection = {
 export type NewElection = {
     title: string;
     description?: string;
-    options?: Option[];
+    options?: string[];
     opens: number;
     closes: number;
 };
 
 export type PatchElection = {
-    _id: ObjectId;
     title?: string;
     description?: string;
-    options?: Option[];
+    options?: string[];
     opens?: number;
     closes?: number;
     deleted?: boolean;
 };
 
-export type InternalElection = PrimitiveElection & {
-    _id: ObjectId;
-    owner: string;
-};
+export type InternalElection = PrimitiveElection & { owner: string };
+export type PublicElection = PrimitiveElection & { owned: boolean };
 
-export type PublicElection = PrimitiveElection & {
-    election_id: ObjectId;
-    owned: boolean;
-};
+// TODO: document the differences between election types
+export type InDbElection = WithId<Omit<InternalElection, 'election_id'>>;
 
 export type ApiKey = {
     owner: string;
@@ -53,31 +47,27 @@ export type ApiKey = {
 
 export type VoterRanking = {
     voter_id: string;
-    ranking: Option[];
+    ranking: string[];
 };
-
-export type VoterRankings = VoterRanking[];
 
 export type ElectionRankings = {
     election_id: ObjectId;
-    rankings: VoterRankings;
+    rankings: VoterRanking[];
 };
 
 export type RequestLogEntry = {
-    _id: ObjectId;
-    ip: string;
+    ip: string | null;
     key: string | null;
-    route: string;
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE';
+    route: string | null;
+    method: string | null;
+    resStatusCode: number;
     time: number;
-    response: number;
 };
 
 export type LimitedEntry = {
-    _id: ObjectId;
     until: number;
-    ip?: string;
-    key?: string;
+    ip: string | null;
+    key: string | null;
 };
 
 export type Metadata = {

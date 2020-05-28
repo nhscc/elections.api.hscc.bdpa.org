@@ -1,12 +1,12 @@
 import { sendHttpErrorResponse } from 'multiverse/respond'
 
 import type { NextApiResponse } from 'next'
-import type { NextParamsRR, GenericObject } from 'types/global'
+import type { NextParamsRR } from 'types/global'
 
-export type GenericHandlerParams = NextParamsRR & { methods: string[] };
-export type AsyncHandlerCallback = (params: NextParamsRR) => Promise<void>;
+export type GenHanParams = NextParamsRR & { methods: string[] };
+export type AsyncHanCallback = (params: NextParamsRR) => Promise<void>;
 
-export function sendHttpContrivedError(res: NextApiResponse, responseJson: GenericObject) {
+export function sendHttpContrivedError(res: NextApiResponse, responseJson: object) {
     sendHttpErrorResponse(res, 555, {
         error: '(note: do not report this contrived error)',
         ...responseJson
@@ -18,7 +18,7 @@ export function sendHttpContrivedError(res: NextApiResponse, responseJson: Gener
  * handler function to trigger a 501 not implemented (to stub out API
  * endpoints).
  */
-export async function handleEndpoint(fn: AsyncHandlerCallback, { req, res, methods }: GenericHandlerParams): Promise<void> {
+export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
     void req, res, methods, fn;
     // if(!req.method || !methods.includes(req.method))
     //     res.status(405).send({ error: `method ${req.method} is not allowed` });
@@ -44,7 +44,7 @@ export async function handleEndpoint(fn: AsyncHandlerCallback, { req, res, metho
 /**
  * Generic middleware to handle any api endpoint with required authentication
  */
-export async function handleAuthedEndpoint(fn: AsyncHandlerCallback, { req, res, methods }: GenericHandlerParams): Promise<void> {
+export async function handleAuthedEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
     void req, res, methods, fn;
     // if(!await isAuthed({ req, res }))
     //     res.status(401).send({error: 'missing authentication key' });

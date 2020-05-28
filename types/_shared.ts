@@ -3,10 +3,41 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-export type GenericObject<T=unknown> = Record<string, T>;
 
-export type SuccessJsonResponse = { success: true }
+// TODO: jsdoc comment/document all of this stuff like the below:
+/**
+ * @desc Type representing
+ * [`Primitive`](https://developer.mozilla.org/en-US/docs/Glossary/Primitive)
+ * types.
+ *
+ * @example
+ *   type Various = number | string | object;
+ *
+ *   /// Expect: object
+ *   type Cleaned = Exclude<Various, Primitive>
+ */
+export type Primitive =
+  | string
+  | number
+  | bigint
+  | boolean
+  | symbol
+  | null
+  | undefined;
+
+/**
+ * @desc Type representing falsy values.
+ * @example
+ *   type Various = 'a' | 'b' | undefined | false;
+ *
+ *   /// Expect: "a" | "b"
+ *   Exclude<Various, Falsy>;
+ */
+export type Falsy = false | '' | 0 | null | undefined;
+
+export type SuccessJsonResponse = { success: true };
 export type ErrorJsonResponse = { error: string };
+
 export type HttpJsonResponse2xx = SuccessJsonResponse;
 export type HttpJsonResponse3xx = SuccessJsonResponse;
 export type HttpJsonResponse4xx = ErrorJsonResponse;
@@ -26,20 +57,9 @@ export type HttpStatusCode =
 
     | 500 | 501 | 502 | 503 | 504 | 505 | 506 | 507 | 508 | 509 | 510 | 511 | 555 | 598 | 599;
 
-export type NextParamsResponseQuery<T = object> = {
-    res: NextApiResponse<T>;
-    query: object;
-};
-
-export type NextParamsResponseStatus<T = object> = {
-    res: NextApiResponse<T>;
-    status: HttpStatusCode;
-};
-
-export type NextParamsRR<T = object> = {
+export type NextParamsRR<T=object> = {
     req: NextApiRequest;
     res: NextApiResponse<T>;
 };
 
 export type NextParamsRRQ = NextParamsRR & { query: object };
-export type NextParamsResponseStatusQuery = NextParamsResponseQuery & NextParamsResponseStatus;

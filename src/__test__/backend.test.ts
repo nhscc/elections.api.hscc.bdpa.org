@@ -1,15 +1,22 @@
-import { ObjectId } from 'mongodb';
+import { ObjectId, WithId } from 'mongodb';
 import * as Backend from 'universe/backend'
 import { setupJest, unhydratedDummyDbData } from 'universe/__test__/db'
 import { getEnv } from 'universe/backend/env'
 import { populateEnv } from 'universe/dev-utils'
+import randomInt from 'random-int'
 
-import type{ NextApiRequest, NextApiResponse } from 'next';
-import { InternalElection, NewElection, PatchElection, VoterRankings, PublicElection } from 'types/global'
-import randomInt from 'random-int';
+import type{ NextApiRequest, NextApiResponse } from 'next'
+import {
+    InternalElection,
+    NewElection,
+    PatchElection,
+    PublicElection,
+    RequestLogEntry,
+    VoterRanking
+} from 'types/global'
 
 populateEnv();
-jest.setTimeout(1000000);
+//jest.setTimeout(100000);
 
 const { getHydratedData, getDb } = setupJest();
 
@@ -42,7 +49,7 @@ describe('universe/backend', () => {
 
             const {
                 title,
-                _id,
+                election_id,
                 closes,
                 created,
                 deleted,
@@ -57,9 +64,9 @@ describe('universe/backend', () => {
             expect(await (await Backend.getPublicElections({
                 key: Backend.NULL_KEY,
                 limit: 1,
-                after: elections[index - 1]?._id
+                after: elections[index - 1].election_id
             })).toArray()).toEqual<PublicElection[]>([{
-                election_id: _id,
+                election_id,
                 title,
                 description,
                 options,
@@ -84,11 +91,10 @@ describe('universe/backend', () => {
 
         it('returns paginated data respecting limit and after', async () => {
             const elections = getHydratedData().elections.map(e => {
-                const { _id, owner,...election } = e;
+                const { owner, ...election } = e;
 
                 return {
                     ...election,
-                    election_id: _id,
                     owned: owner == Backend.NULL_KEY,
                 } as PublicElection
             });
@@ -196,10 +202,10 @@ describe('universe/backend', () => {
             const election = getHydratedData().elections[0];
 
             expect(await Backend.getPublicElection({
-                electionId: election._id,
+                electionId: election.election_id,
                 key: Backend.NULL_KEY
             })).toEqual<PublicElection>({
-                election_id: election._id,
+                election_id: election.election_id,
                 title: election.title,
                 description: election.description,
                 options: election.options as string[],
@@ -223,10 +229,10 @@ describe('universe/backend', () => {
         it('returns internal election data', async () => {
             const elections = getHydratedData().elections;
 
-            expect(await Backend.getInternalElection(elections[0]._id)).toEqual(elections[0]);
-            expect(await Backend.getInternalElection(elections[1]._id)).toEqual(elections[1]);
-            expect(await Backend.getInternalElection(elections[5]._id)).toEqual(elections[5]);
-            expect(await Backend.getInternalElection(elections[elections.length - 1]._id))
+            expect(await Backend.getInternalElection(elections[0].election_id)).toEqual(elections[0]);
+            expect(await Backend.getInternalElection(elections[1].election_id)).toEqual(elections[1]);
+            expect(await Backend.getInternalElection(elections[5].election_id)).toEqual(elections[5]);
+            expect(await Backend.getInternalElection(elections[elections.length - 1].election_id))
                 .toEqual(elections[elections.length - 1]);
         });
 
@@ -246,11 +252,11 @@ describe('universe/backend', () => {
             // @ts-ignore
             expect(Backend.doesElectionExist(undefined)).toReject();
             /* eslint-enable @typescript-eslint/ban-ts-ignore */
-            expect(await Backend.doesElectionExist(elections[0]._id)).toEqual(true);
-            expect(await Backend.doesElectionExist(elections[1]._id)).toEqual(true);
-            expect(await Backend.doesElectionExist(elections[5]._id)).toEqual(true);
-            expect(await Backend.doesElectionExist(elections[10]._id)).toEqual(true);
-            expect(await Backend.doesElectionExist(elections[elections.length - 1]._id)).toEqual(true);
+            expect(await Backend.doesElectionExist(elections[0].election_id)).toEqual(true);
+            expect(await Backend.doesElectionExist(elections[1].election_id)).toEqual(true);
+            expect(await Backend.doesElectionExist(elections[5].election_id)).toEqual(true);
+            expect(await Backend.doesElectionExist(elections[10].election_id)).toEqual(true);
+            expect(await Backend.doesElectionExist(elections[elections.length - 1].election_id)).toEqual(true);
         });
     });
 
@@ -259,13 +265,13 @@ describe('universe/backend', () => {
             const newElection = {
                 title: 'New election',
                 description: 'This is a new election',
-                options: ['1', '2'],
                 opens: Date.now() + 10**6,
                 closes: Date.now() + 10**7
             };
 
             // ? Bad props should be ignored
             const badProps = {
+                election_id: new ObjectId(),
                 /* eslint-disable @typescript-eslint/ban-ts-ignore */
                 // @ts-ignore
                 _id: new ObjectId(),
@@ -280,15 +286,27 @@ describe('universe/backend', () => {
                 /* eslint-enable @typescript-eslint/ban-ts-ignore */
             };
 
+            const results = await Promise.all(Object.entries(badProps).map(([k, v]) => Backend.upsertElection({
+                election: { ...newElection, [k]: v } as NewElection,
+                key: Backend.NULL_KEY
+            }).then(() => true, () => false)));
+
+            expect(results).toEqual([false, false, false, false, false, false]);
+
             const election = await Backend.upsertElection({
-                election: { ...newElection, ...badProps } as NewElection,
+                election: newElection,
                 key: Backend.NULL_KEY
             });
 
-            const returnedElection = await Backend.getInternalElection(election._id || new ObjectId('bad'));
-            expect(returnedElection._id).not.toEqual(badProps._id);
+            const returnedElection = await Backend.getInternalElection(election.election_id || new ObjectId('bad'));
+            expect(returnedElection.election_id).not.toEqual(badProps.election_id);
             expect(returnedElection.owner).toEqual(Backend.NULL_KEY);
             expect(returnedElection).toEqual(election);
+
+            expect(Backend.upsertElection({
+                election: badProps as unknown as NewElection,
+                key: Backend.NULL_KEY
+            })).toReject();
         });
 
         it('does not allow invalid opens/closes times', async () => {
@@ -302,16 +320,39 @@ describe('universe/backend', () => {
 
             const { opens, closes, ...badElection } = newElection;
 
-            expect(Backend.upsertElection({ election: { ...newElection, opens: 100, closes: 200 }, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({
+                election: { ...newElection, opens: 100, closes: 200 },
+                key: Backend.NULL_KEY
+            })).toReject();
+
             /* eslint-disable @typescript-eslint/ban-ts-ignore */
             // @ts-ignore
-            expect(Backend.upsertElection({ election: { ...badElection, opens }, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({
+                election: { ...badElection, opens },
+                key: Backend.NULL_KEY
+            })).toReject();
+
             // @ts-ignore
-            expect(Backend.upsertElection({ election: { ...badElection, closes }, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({
+                election: { ...badElection, closes },
+                key: Backend.NULL_KEY
+            })).toReject();
             /* eslint-enable @typescript-eslint/ban-ts-ignore */
-            expect(Backend.upsertElection({ election: { ...badElection, closes: 100, opens }, key: Backend.NULL_KEY })).toReject();
-            expect(Backend.upsertElection({ election: { ...badElection, opens: 100, closes }, key: Backend.NULL_KEY })).toReject();
-            expect(Backend.upsertElection({ election: { ...badElection, opens: closes, closes: opens }, key: Backend.NULL_KEY })).toReject();
+
+            expect(Backend.upsertElection({
+                election: { ...badElection, closes: 100, opens },
+                key: Backend.NULL_KEY
+            })).toReject();
+
+            expect(Backend.upsertElection({
+                election: { ...badElection, opens: 100, closes },
+                key: Backend.NULL_KEY
+            })).toReject();
+
+            expect(Backend.upsertElection({
+                election: { ...badElection, opens: closes, closes: opens },
+                key: Backend.NULL_KEY
+            })).toReject();
         });
 
         it('updates an existing election when election_id already exists', async () => {
@@ -325,28 +366,45 @@ describe('universe/backend', () => {
 
             const election1 = await Backend.upsertElection({ election: newElection, key: Backend.NULL_KEY });
 
-            expect(typeof election1._id === 'undefined').toBeFalse();
+            expect(typeof election1.election_id === 'undefined').toBeFalse();
 
             const election2 = await Backend.upsertElection({
-                electionId: election1._id,
-                election: {
-                    ...newElection,
-                    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
-                    // @ts-ignore
-                    created: 100,
-                    opens: newElection.opens + 200,
-                    closes: newElection.closes + 300
-                },
-                key: Backend.NULL_KEY
+                electionId: election1.election_id,
+                election: { ...newElection, opens: newElection.opens + 200, closes: newElection.closes + 300 }
             });
 
-            expect(election1._id).toEqual(election2._id);
+            // ? Bad props should be ignored
+            const badProps = {
+                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                // @ts-ignore
+                created: 100,
+                opens: newElection.closes,
+                closes: newElection.opens,
+                _id: new Object(),
+                election_id: new Object(),
+                extra: 'bad'
+            };
+
+            const results = await Promise.all(Object.entries(badProps).map(([k, v]) => Backend.upsertElection({
+                electionId: election1.election_id,
+                election: { ...newElection, [k]: v } as NewElection
+            }).then(() => true, () => false)));
+
+            expect(results).toEqual([false, false, false, false, false, false]);
+
+            expect(election2.election_id).toEqual(election1.election_id);
             expect(election1.opens).toEqual(newElection.opens);
             expect(election2.opens).toEqual(newElection.opens + 200);
 
-            const returnedElection = await Backend.getInternalElection(election1._id || new ObjectId('bad'));
+            const returnedElection = await Backend.getInternalElection(election1.election_id || new ObjectId('bad'));
 
-            expect(returnedElection._id).toEqual(election1._id);
+            expect(returnedElection.election_id).toEqual(election1.election_id);
+            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            // @ts-ignore
+            expect(returnedElection._id).toBeUndefined();
+            // @ts-ignore
+            expect(returnedElection.extra).toBeUndefined();
+            /* eslint-enable @typescript-eslint/ban-ts-ignore */
             expect(returnedElection.created).toEqual(election1.created);
             // ? Bad props should be ignored!
             expect(returnedElection.created).not.toEqual(100);
@@ -356,6 +414,10 @@ describe('universe/backend', () => {
 
         it('rejects when missing necessary params', async () => {
             /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            // @ts-ignore
+            const newElection00: NewElection = { election_id: 'fake', bad: 'nope' };
+            // @ts-ignore
+            const newElection0: NewElection = {};
             // @ts-ignore
             const newElection1: NewElection = {
                 description: 'This is a new election',
@@ -379,93 +441,17 @@ describe('universe/backend', () => {
             expect(Backend.upsertElection({ election: newElection1, key: Backend.NULL_KEY })).toReject();
             expect(Backend.upsertElection({ election: newElection2, key: Backend.NULL_KEY })).toReject();
             expect(Backend.upsertElection({ election: newElection3, key: Backend.NULL_KEY })).toReject();
-        });
-    });
 
-    describe('::isKeyAuthentic', () => {
-        it('returns expected result on valid and invalid keys', async () => {
-            expect(Backend.isKeyAuthentic('')).toReject();
-            expect(await Backend.isKeyAuthentic('d68d8b5e-b926-4925-ac77-1013e56b8c81')).toEqual(false);
-            expect(await Backend.isKeyAuthentic(getHydratedData().keys[0].key)).toEqual(true);
-        });
+            expect(Backend.upsertElection({ election: newElection0, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection00, key: Backend.NULL_KEY })).toReject();
 
-        it('returns false if key is NULL_KEY', async () => {
-            expect(await Backend.isKeyAuthentic(Backend.NULL_KEY)).toEqual(false);
-        });
-    });
+            const election_id = getHydratedData().elections[0].election_id;
 
-    describe('::deleteElection', () => {
-        it('soft deletes but does not eliminate election document', async () => {
-            const election_id = getHydratedData().elections[0]._id;
-
-            expect(await Backend.doesElectionExist(election_id)).toEqual(true);
-
-            await Backend.deleteElection(election_id);
-
-            expect(await Backend.doesElectionExist(election_id)).toEqual(true);
-            expect((await Backend.getInternalElection(election_id)).deleted).toEqual(true);
-        });
-    });
-
-    describe('::replaceRankings and ::getRankings', () => {
-        it("::replaceRankings replaces an election's rankings data, returned by ::getRankings", async () => {
-            const election = getHydratedData().elections[0];
-            const oldRankings = await Backend.getRankings(election._id);
-            const newRankings = [{ voter_id: '1', ranking: election.options }];
-
-            await Backend.replaceRankings({ electionId: election._id, rankings: newRankings });
-
-            expect(oldRankings.length > 0).toEqual(true);
-            expect(await Backend.getRankings(election._id)).toEqual(newRankings);
-
-            await Backend.replaceRankings({ electionId: election._id, rankings: oldRankings });
-            expect(await Backend.getRankings(election._id)).toEqual(oldRankings);
-
-            await Backend.replaceRankings({ electionId: election._id, rankings: [] });
-            expect(await Backend.getRankings(election._id)).toEqual([]);
-
-            const newerRankings = [{ voter_id: '1', ranking: [] }, { voter_id: '2', ranking: [] }];
-
-            await Backend.replaceRankings({ electionId: election._id, rankings: newerRankings });
-            expect(await Backend.getRankings(election._id)).toEqual(newerRankings);
-
-            const newestRankings = [...oldRankings.slice(1)];
-
-            await Backend.replaceRankings({ electionId: election._id, rankings: newestRankings });
-            expect(await Backend.getRankings(election._id)).toEqual(newestRankings);
+            expect(Backend.upsertElection({ election: newElection0, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection00, electionId: election_id })).toReject();
         });
 
-        it('::replaceRankings and ::getRankings rejects if election_id does not exist', async () => {
-            expect(Backend.replaceRankings({ electionId: new ObjectId(), rankings: [] })).toReject();
-            expect(Backend.getRankings(new ObjectId())).toReject();
-        });
-
-        it('::replaceRankings rejects on illegal options', async () => {
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [1] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [1, 2] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{}] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{}, {}] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ a: 1 }, { b: 2 }] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: 1 }] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1' }] })).toReject();
-            // @ts-ignore
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: [1] }] })).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: ['1'] }] })).toReject();
-            expect(Backend.replaceRankings({ electionId: getHydratedData().elections[0]._id, rankings: [{ voter_id: '1', ranking: ['1', '2'] }] })).toReject();
-        });
-    });
-
-    describe('::validateElectionData', () => {
-        it('returns true on valid new elections', async () => {
+        it('does not reject on valid new elections', async () => {
             const newElection1: NewElection = {
                 title: 'New election',
                 description: 'This is a new election',
@@ -480,38 +466,39 @@ describe('universe/backend', () => {
                 closes: Date.now() + 10**7,
             };
 
-            expect(await Backend.validateElectionData(newElection1)).toEqual(true);
-            expect(await Backend.validateElectionData(newElection2)).toEqual(true);
+            expect(Backend.upsertElection({ election: newElection1, key: Backend.NULL_KEY })).toResolve();
+            expect(Backend.upsertElection({ election: newElection2, key: Backend.NULL_KEY })).toResolve();
         });
 
-        it('returns true on valid election updates', async () => {
-            const electionPatch1: PatchElection = { _id: new ObjectId() };
+        it('does not reject on valid election updates', async () => {
+            const election_id = getHydratedData().elections.slice(-1)[0].election_id;
+
+            const electionPatch0: PatchElection = { options: undefined };
+            const electionPatch1: PatchElection = {};
+
             const electionPatch2: PatchElection = {
-                _id: new ObjectId(),
                 title: 'New election',
                 opens: Date.now() + 10**6,
                 closes: Date.now() + 10**7,
             };
 
             const electionPatch3: PatchElection = {
-                _id: new ObjectId(),
                 options: [],
             };
 
             const electionPatch4: PatchElection = {
-                _id: new ObjectId(),
+                title: 'faker title',
                 options: undefined,
             };
 
-            expect(await Backend.validateElectionData(electionPatch1, { patch: true })).toEqual(true);
-            expect(await Backend.validateElectionData(electionPatch2, { patch: true })).toEqual(true);
-            expect(await Backend.validateElectionData(electionPatch3, { patch: true })).toEqual(true);
-            expect(await Backend.validateElectionData(electionPatch4, { patch: true })).toEqual(true);
+            expect(Backend.upsertElection({ election: electionPatch2, electionId: election_id })).toResolve();
+            expect(Backend.upsertElection({ election: electionPatch3, electionId: election_id })).toResolve();
+            expect(Backend.upsertElection({ election: electionPatch4, electionId: election_id })).toResolve();
+            expect(Backend.upsertElection({ election: electionPatch1, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: electionPatch0, electionId: election_id })).toReject();
         });
 
         it('rejects for new elections when illegal keys provided or required keys missing', async () => {
-            const newElection0 = {} as unknown as NewElection;
-
             const newElection1 = {
                 opens: Date.now() + 10**6,
                 closes: Date.now() + 10**7,
@@ -530,13 +517,6 @@ describe('universe/backend', () => {
             } as unknown as NewElection;
 
             const newElection4 = {
-                title: 'My new election!',
-                created: 0,
-                opens: Date.now() + 10**6,
-                closes: Date.now() + 10**7
-            } as unknown as NewElection;
-
-            const newElection4b = {
                 title: 'My new election!',
                 opens: Date.now() + 10**6,
                 closes: Date.now() + 10**7,
@@ -558,41 +538,23 @@ describe('universe/backend', () => {
             } as unknown as NewElection;
 
             const newElection7 = {
-                election_id: new ObjectId(),
-                title: 'My new election!',
-                opens: Date.now() + 10**6,
-                closes: Date.now() + 10**7,
-            } as unknown as NewElection;
-
-            const newElection8 = {
-                _id: new ObjectId(),
-                title: 'My new election!',
-                opens: Date.now() + 10**6,
-                closes: Date.now() + 10**7,
-            } as unknown as NewElection;
-
-            const newElection9 = {
                 title: 'My new election!',
                 opens: Date.now() + 10**6,
                 closes: Date.now() + 10**7,
                 blahblahlblah: true,
             } as unknown as NewElection;
 
-            expect(Backend.validateElectionData(newElection0)).toReject();
-            expect(Backend.validateElectionData(newElection1)).toReject();
-            expect(Backend.validateElectionData(newElection2)).toReject();
-            expect(Backend.validateElectionData(newElection3)).toReject();
-            expect(Backend.validateElectionData(newElection4)).toReject();
-            expect(Backend.validateElectionData(newElection4b)).toReject();
-            expect(Backend.validateElectionData(newElection5)).toReject();
-            expect(Backend.validateElectionData(newElection6)).toReject();
-            expect(Backend.validateElectionData(newElection7)).toReject();
-            expect(Backend.validateElectionData(newElection8)).toReject();
-            expect(Backend.validateElectionData(newElection9)).toReject();
+            expect(Backend.upsertElection({ election: newElection1, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection2, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection3, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection4, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection5, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection6, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection7, key: Backend.NULL_KEY })).toReject();
         });
 
         it('rejects for updating elections when illegal keys provided', async () => {
-            const patchElection1 = {} as unknown as PatchElection;
+            const election_id = getHydratedData().elections.slice(-1)[0].election_id;
 
             const patchElection2 = {
                 created: 0,
@@ -614,15 +576,16 @@ describe('universe/backend', () => {
                 election_id: new ObjectId(),
             } as unknown as PatchElection;
 
-            expect(Backend.validateElectionData(patchElection1, { patch: true })).toReject();
-            expect(Backend.validateElectionData(patchElection2, { patch: true })).toReject();
-            expect(Backend.validateElectionData(patchElection3, { patch: true })).toReject();
-            expect(Backend.validateElectionData(patchElection4, { patch: true })).toReject();
-            expect(Backend.validateElectionData(patchElection5, { patch: true })).toReject();
-            expect(Backend.validateElectionData(patchElection6, { patch: true })).toReject();
+            expect(Backend.upsertElection({ election: patchElection2, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: patchElection3, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: patchElection4, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: patchElection5, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: patchElection6, electionId: election_id })).toReject();
         });
 
         it('rejects on elections with options.length > MAX_OPTIONS_PER_ELECTION', async () => {
+            const election_id = getHydratedData().elections.slice(-1)[0].election_id;
+
             const newElection: NewElection = {
                 title: 'New election',
                 description: 'This is a new election',
@@ -631,38 +594,13 @@ describe('universe/backend', () => {
                 closes: Date.now() + 10**7,
             };
 
-            expect(Backend.validateElectionData(newElection)).toReject();
-            expect(Backend.validateElectionData(newElection, { patch: true })).toReject();
-        });
-
-        it('rejects when !(created <= opens <= closes)', async () => {
-            const newElection1: NewElection = {
-                title: 'New election',
-                description: 'This is a new election',
-                opens: 1,
-                closes: 2,
-            };
-
-            const newElection2: NewElection = {
-                title: 'New election',
-                description: 'This is a new election',
-                opens: Date.now(),
-                closes: 2,
-            };
-
-            const newElection3: NewElection = {
-                title: 'New election',
-                description: 'This is a new election',
-                opens: 1,
-                closes: Date.now(),
-            };
-
-            expect(Backend.validateElectionData(newElection1)).toReject();
-            expect(Backend.validateElectionData(newElection2)).toReject();
-            expect(Backend.validateElectionData(newElection3)).toReject();
+            expect(Backend.upsertElection({ election: newElection, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection, electionId: election_id })).toReject();
         });
 
         it('rejects if any of the values are the incorrect type (number/string)', async () => {
+            const election_id = getHydratedData().elections.slice(-1)[0].election_id;
+
             const newElection1 = {
                 title: null,
                 opens: Date.now() + 10**6,
@@ -729,50 +667,188 @@ describe('universe/backend', () => {
                 closes: Date.now() + 10**7,
             } as unknown as InternalElection;
 
-            expect(Backend.validateElectionData(newElection1)).toReject();
-            expect(Backend.validateElectionData(newElection2)).toReject();
-            expect(Backend.validateElectionData(newElection3)).toReject();
-            expect(Backend.validateElectionData(newElection4)).toReject();
-            expect(Backend.validateElectionData(newElection5)).toReject();
-            expect(Backend.validateElectionData(newElection6)).toReject();
-            expect(Backend.validateElectionData(newElection7)).toReject();
-            expect(Backend.validateElectionData(newElection8)).toReject();
-            expect(Backend.validateElectionData(newElection9)).toReject();
-            expect(Backend.validateElectionData(newElection10)).toReject();
+            expect(Backend.upsertElection({ election: newElection1, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection2, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection3, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection4, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection5, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection6, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection7, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection8, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection9, key: Backend.NULL_KEY })).toReject();
+            expect(Backend.upsertElection({ election: newElection10, key: Backend.NULL_KEY })).toReject();
 
-            expect(Backend.validateElectionData(newElection1, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection2, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection3, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection4, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection5, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection6, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection7, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection8, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection9, { patch: true })).toReject();
-            expect(Backend.validateElectionData(newElection10, { patch: true })).toReject();
+            expect(Backend.upsertElection({ election: newElection1, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection2, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection3, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection4, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection5, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection6, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection7, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection8, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection9, electionId: election_id })).toReject();
+            expect(Backend.upsertElection({ election: newElection10, electionId: election_id })).not.toReject();
         });
     });
 
-    describe('::validateRankingsData', () => {
-        it('returns true on valid rankings and false on invalid rankings', async () => {
-            const election = getHydratedData().elections[0];
-            const newRankings1: VoterRankings = [];
+    describe('::isKeyAuthentic', () => {
+        it('returns expected result on valid and invalid keys', async () => {
+            expect(Backend.isKeyAuthentic('')).toReject();
+            expect(await Backend.isKeyAuthentic('d68d8b5e-b926-4925-ac77-1013e56b8c81')).toEqual(false);
+            expect(await Backend.isKeyAuthentic(getHydratedData().keys[0].key)).toEqual(true);
+        });
 
-            const newRankings2: VoterRankings = [
+        it('returns false if key is NULL_KEY', async () => {
+            expect(await Backend.isKeyAuthentic(Backend.NULL_KEY)).toEqual(false);
+        });
+    });
+
+    describe('::deleteElection', () => {
+        it('soft deletes but does not eliminate election document', async () => {
+            const election_id = getHydratedData().elections[0].election_id;
+
+            expect(await Backend.doesElectionExist(election_id)).toEqual(true);
+
+            await Backend.deleteElection(election_id);
+
+            expect(await Backend.doesElectionExist(election_id)).toEqual(true);
+            expect((await Backend.getInternalElection(election_id)).deleted).toEqual(true);
+        });
+    });
+
+    describe('::replaceRankings and ::getRankings', () => {
+        it("::replaceRankings replaces an election's rankings data, returned by ::getRankings", async () => {
+            const election = getHydratedData().elections[0];
+            const oldRankings = await Backend.getRankings(election.election_id);
+            const newRankings = [{ voter_id: '1', ranking: election.options }];
+
+            await Backend.replaceRankings({ electionId: election.election_id, rankings: newRankings });
+
+            expect(oldRankings.length > 0).toEqual(true);
+            expect(await Backend.getRankings(election.election_id)).toEqual(newRankings);
+
+            await Backend.replaceRankings({ electionId: election.election_id, rankings: oldRankings });
+            expect(await Backend.getRankings(election.election_id)).toEqual(oldRankings);
+
+            await Backend.replaceRankings({ electionId: election.election_id, rankings: [] });
+            expect(await Backend.getRankings(election.election_id)).toEqual([]);
+
+            const newerRankings = [{ voter_id: '1', ranking: [] }, { voter_id: '2', ranking: [] }];
+
+            await Backend.replaceRankings({ electionId: election.election_id, rankings: newerRankings });
+            expect(await Backend.getRankings(election.election_id)).toEqual(newerRankings);
+
+            const newestRankings = [...oldRankings.slice(1)];
+
+            await Backend.replaceRankings({ electionId: election.election_id, rankings: newestRankings });
+            expect(await Backend.getRankings(election.election_id)).toEqual(newestRankings);
+        });
+
+        it('::replaceRankings and ::getRankings rejects if election_id does not exist', async () => {
+            expect(Backend.replaceRankings({ electionId: new ObjectId(), rankings: [] })).toReject();
+            expect(Backend.getRankings(new ObjectId())).toReject();
+        });
+
+        it('::replaceRankings rejects on illegal options', async () => {
+            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [1]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [1, 2]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{}]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{}, {}]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{ a: 1 }, { b: 2 }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{ voter_id: 1 }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{ voter_id: '1' }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                // @ts-ignore
+                rankings: [{ voter_id: '1', ranking: [1] }]
+            })).toReject();
+
+            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                rankings: [{ voter_id: '1', ranking: ['1'] }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                rankings: [{ voter_id: '1', ranking: ['1', '2'] }]
+            })).toReject();
+        });
+
+        it('does not reject on valid rankings but does on invalid rankings', async () => {
+            const election = getHydratedData().elections[0];
+            const newRankings1: VoterRanking[] = [];
+
+            const newRankings2: VoterRanking[] = [
                 { voter_id: 'my-userid1', ranking: election.options },
             ];
 
-            const newRankings3: VoterRankings = [
+            const newRankings3: VoterRanking[] = [
                 { voter_id: 'my-userid1', ranking: election.options },
                 { voter_id: 'my-userid2', ranking: election.options },
                 { voter_id: 'my-userid3', ranking: election.options },
             ];
 
-            expect(Backend.validateRankingsData(election._id, null as unknown as VoterRankings)).toReject();
-            expect(Backend.validateRankingsData(election._id, false as unknown as VoterRankings)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings1)).toBe(true);
-            expect(Backend.validateRankingsData(election._id, newRankings2)).toBe(true);
-            expect(Backend.validateRankingsData(election._id, newRankings3)).toBe(true);
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: null as unknown as VoterRanking[]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: false as unknown as VoterRanking[]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: newRankings1
+            })).toResolve();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: newRankings2
+            })).toResolve();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: newRankings3
+            })).toResolve();
         });
 
         it('rejects on rankings with length > MAX_RANKINGS_PER_ELECTION', async () => {
@@ -780,13 +856,17 @@ describe('universe/backend', () => {
             const newRankings = [...Array(getEnv().MAX_RANKINGS_PER_ELECTION + 1)].map((_, ndx) =>
                 ({ voter_id: ndx.toString(), ranking: election.options }));
 
-            expect(Backend.validateRankingsData(election._id, newRankings)).toReject();
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: newRankings
+            })).toReject();
         });
 
         it('rejects on rankings that include non-existent options for the election', async () => {
-            expect(Backend.validateRankingsData(
-                getHydratedData().elections[0]._id, [{ voter_id: '5', ranking: ['FAKE'] }]
-            )).toReject();
+            expect(Backend.replaceRankings({
+                electionId: getHydratedData().elections[0].election_id,
+                rankings: [{ voter_id: '5', ranking: ['FAKE'] }]
+            })).toReject();
         });
 
         it('rejects if any of the ids or rankings are not the correct type', async () => {
@@ -817,32 +897,153 @@ describe('universe/backend', () => {
                 { voter_id: 'blah', ranking: election.options },
                 { voter_id: 'blah', ranking: election.options }
             ];
-            const newRankings24 = [{ voter_id: 'blah', ranking: election.options, extra: 'bad' }];
+            const newRankings24 = [{ voter_id: '', ranking: election.options }];
 
-            expect(Backend.validateRankingsData(election._id, newRankings1)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings2)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings3)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings4)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings5)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings6)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings7)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings8)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings9)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings10)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings11)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings12)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings13)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings14)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings15)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings16)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings17)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings18)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings19)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings20)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings21)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings22)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings23)).toReject();
-            expect(Backend.validateRankingsData(election._id, newRankings24)).toReject();
+            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings1
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings2
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings3
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings4
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings5
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings6
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings7
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings8
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings9
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings10
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings11
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings12
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings13
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings14
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings15
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings16
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings17
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings18
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings19
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings20
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings21
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings22
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings23
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                // @ts-ignore
+                rankings: newRankings24
+            })).toReject();
+            /* eslint-enable @typescript-eslint/ban-ts-ignore */
         });
     });
 
@@ -860,7 +1061,7 @@ describe('universe/backend', () => {
                     'key': Backend.NULL_KEY
                 },
                 method: 'GET',
-                url: 'http://fake.com/api/route/path2'
+                url: 'https://fake.com/api/route/path2'
             } as unknown as NextApiRequest;
 
             const res1 = { statusCode: 1111 } as NextApiResponse;
@@ -870,28 +1071,32 @@ describe('universe/backend', () => {
             const _now = Date.now;
             Date.now = () => now;
 
-            await Backend.addToRequestLog(req1, res1);
-            await Backend.addToRequestLog(req2, res2);
+            await Backend.addToRequestLog({ req: req1, res: res1 });
+            await Backend.addToRequestLog({ req: req2, res: res2 });
 
             Date.now = _now;
 
-            const reqlog = await (await getDb()).collection('request-log');
+            const reqlog = (await getDb()).collection<WithId<RequestLogEntry>>('request-log');
 
-            expect(await reqlog.findOne({ statusCode: 1111 })).toEqual({
+            const { _id: ignored1, ...log1 } = await reqlog.findOne({ resStatusCode: 1111 }) || {};
+            const { _id: ignored2, ...log2 } = await reqlog.findOne({ resStatusCode: 2222 }) || {};
+
+            expect(log1).toEqual({
                 ip: '9.9.9.9',
-                route: '/api/route/path1',
+                key: null,
+                route: 'route/path1',
                 method: 'POST',
                 time: now,
-                response: 1111
+                resStatusCode: 1111,
             });
 
-            expect(await reqlog.findOne({ statusCode: 2222 })).toEqual({
+            expect(log2).toEqual({
                 ip: '8.8.8.8',
                 key: Backend.NULL_KEY,
-                route: '/api/route/path2',
+                route: 'route/path2',
                 method: 'GET',
                 time: now,
-                response: 2222
+                resStatusCode: 2222
             });
         });
     });
@@ -922,9 +1127,18 @@ describe('universe/backend', () => {
                 url: 'http://fake.com/api/route/path1'
             } as unknown as NextApiRequest;
 
+            const req4 = {
+                headers: {
+                    'x-forwarded-for': '5.6.7.8',
+                },
+                method: 'POST',
+                url: 'http://fake.com/api/route/path1'
+            } as unknown as NextApiRequest;
+
             expect(await Backend.isRateLimited(req1)).toEqual(true);
             expect(await Backend.isRateLimited(req2)).toEqual(true);
             expect(await Backend.isRateLimited(req3)).toEqual(true);
+            expect(await Backend.isRateLimited(req4)).toEqual(true);
         });
 
         it('returns false iff both ip and key (if provided) are not rate limited', async () => {
@@ -951,10 +1165,13 @@ describe('universe/backend', () => {
     describe('::isDueForContrivedError', () => {
         it('returns true after REQUESTS_PER_CONTRIVED_ERROR invocations', async () => {
             const rate = getEnv().REQUESTS_PER_CONTRIVED_ERROR;
-            expect.assertions(rate);
 
-            [...Array(rate)].forEach((_, i) =>
-                expect(Backend.isDueForContrivedError()).toEqual(i == rate - 1 ? true : false));
+            expect([...Array(rate * 2)].map(() => Backend.isDueForContrivedError())).toEqual([
+                ...[...Array(rate - 1)].map(() => false),
+                true,
+                ...[...Array(rate - 1)].map(() => false),
+                true
+            ]);
         });
     });
 });

@@ -1,4 +1,4 @@
-import { MongoClient, Db, ObjectId } from 'mongodb'
+import { MongoClient, Db, ObjectId, WithId } from 'mongodb'
 import { NULL_KEY } from 'universe/backend'
 import { getDb, setDb, destroyDb, initializeDb } from 'universe/backend/db'
 import { MongoMemoryServer } from 'mongodb-memory-server'
@@ -14,7 +14,8 @@ import type {
     ElectionRankings,
     ApiKey,
     RequestLogEntry,
-    LimitedEntry
+    LimitedEntry,
+    InDbElection
 } from 'types/global'
 
 populateEnv();
@@ -24,26 +25,29 @@ export type DummyDbData = {
     elections: InternalElection[];
 };
 
-type InternalElectionSubset = Pick<InternalElection, 'title' | 'description' | 'options' | 'owner' | 'deleted'>;
+type InitialElectionFrag = Omit<InternalElection, 'election_id' | 'created' | 'opens' | 'closes'>;
 
-const injectData = (ob: InternalElectionSubset, fn: (obj: InternalElection) => void): InternalElection => {
-    const election = ob as InternalElection;
+const injectData = (ob: InitialElectionFrag, fn: (obj: InDbElection) => void): InDbElection => {
+    const election = ob as InDbElection;
+    election.created = election.opens = election.closes = 0;
     fn(election);
     return election;
 };
 
-const expandToMaxPageLength = (elections: InternalElection[]): InternalElection[] => {
+const expandToMaxPageLength = (elections: InDbElection[]): InternalElection[] => {
     const maxLimit = getEnv().MAX_LIMIT;
 
     while(elections.length > 0 && elections.length < maxLimit)
         elections.push({... (elections.length % 2 ? elections[0] : (elections[1] || elections[0])) });
 
-    (elections = elections.slice(0, maxLimit)).forEach(election => {
-        election._id = new ObjectId();
+    const internalElections = (elections as unknown as InternalElection[]).slice(0, maxLimit);
+
+    internalElections.forEach(election => {
+        election.election_id = new ObjectId();
         election.title += ` x-gen#${randomInt(maxLimit)}`;
     });
 
-    return elections;
+    return internalElections;
 };
 
 export const unhydratedDummyDbData: DummyDbData = {
@@ -150,7 +154,7 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
 
     // Update keys
     if(newData.keys) {
-        const keysDb = db.collection('keys').initializeUnorderedBulkOp();
+        const keysDb = db.collection<WithId<ApiKey>>('keys').initializeUnorderedBulkOp();
 
         newData.keys.forEach(keyRecord => keysDb.find({ key: keyRecord.key }).upsert().updateOne(keyRecord));
         await keysDb.execute();
@@ -158,15 +162,19 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
 
     // Push new elections
     if(newData.elections) {
-        const electionsDb = db.collection<InternalElection>('elections');
-        const rankingsDb = db.collection<ElectionRankings>('rankings');
+        const electionsDb = db.collection<InDbElection>('elections');
+        const rankingsDb = db.collection<WithId<ElectionRankings>>('rankings');
 
-        await electionsDb.insertMany(newData.elections);
+        await electionsDb.insertMany(newData.elections.map(election => ({
+            _id: election.election_id,
+            ...election
+        })));
+
         const getArrayLength = uniqueRandomArray([0, 1, 2, randomInt(3, 6), randomInt(10, 20), 100, 1000]);
         let first = true;
 
         await rankingsDb.insertMany(newData.elections.map(election => ({
-            election_id: election._id,
+            election_id: election.election_id,
             rankings: [...Array(first ? ((first = false), 10) : getArrayLength())].map((_, id) => ({
                 voter_id: randomInt(id * 3, (id + 1) * 3 - 1).toString(),
                 ranking: shuffle(election.options)
@@ -175,23 +183,22 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
     }
 
     // Push new requests to the log and update limited-mview accordingly
-    const requestLogDb = db.collection<RequestLogEntry>('request-log');
-    const mviewDb = db.collection<LimitedEntry>('limited-mview');
+    const requestLogDb = db.collection<WithId<RequestLogEntry>>('request-log');
+    const mviewDb = db.collection<WithId<LimitedEntry>>('limited-mview');
 
     await requestLogDb.insertMany([...Array(20)].map((_, ndx) => ({
-        _id: new ObjectId(),
         ip: '1.2.3.4',
         key: ndx % 2 ? null : NULL_KEY,
         method: ndx % 3 ? 'GET' : 'POST',
         route: 'fake/route',
         time: Date.now(),
-        response: 200,
+        resStatusCode: 200,
      })));
 
     await mviewDb.insertMany([
-        { _id: new ObjectId(), ip: '1.2.3.4', until: Date.now() + 10**5 },
-        { _id: new ObjectId(), ip: '5.6.7.8', until: Date.now() + 10**6 },
-        { _id: new ObjectId(), key: NULL_KEY, until: Date.now() + 10**7 }
+        { ip: '1.2.3.4', key: null, until: Date.now() + 10**5 },
+        { ip: '5.6.7.8', key: null, until: Date.now() + 10**6 },
+        { ip: null, key: NULL_KEY, until: Date.now() + 10**7 }
     ]);
 
     return newData;
