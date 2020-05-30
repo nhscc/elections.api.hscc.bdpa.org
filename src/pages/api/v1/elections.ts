@@ -7,5 +7,6 @@ export { config } from 'universe/backend/middleware';
 export default async function(req: NextApiRequest, res: NextApiResponse) {
     await handleEndpoint(async ({ res }) => {
         // TODO...
+        void res;
     }, { req, res, methods: [ 'GET', 'POST' ] });
 }

@@ -1,9 +1,9 @@
-import { ObjectId, WithId, AggregationCursor } from 'mongodb'
+import { ObjectId } from 'mongodb'
 import { getEnv } from 'universe/backend/env'
 import { getDb } from 'universe/backend/db'
 import { isUndefined, isArray } from 'util'
 import { getClientIp } from 'request-ip'
-import { NextApiRequest } from 'next'
+import { URL } from 'url'
 
 import {
     LimitTypeError,
@@ -16,7 +16,7 @@ import {
     ValidationError,
 } from 'universe/backend/error'
 
-import {
+import type {
     Metadata,
     PublicElection,
     InternalElection,
@@ -30,6 +30,9 @@ import {
     InDbElection,
     ApiKey
 } from 'types/global'
+
+import type { NextApiRequest } from 'next'
+import type { WithId, AggregationCursor } from 'mongodb'
 
 let requestCounter = 0;
 
@@ -356,7 +359,7 @@ export async function addToRequestLog({ req, res }: NextParamsRR): Promise<void>
         ip: getClientIp(req),
         key: req.headers?.key?.toString() || null,
         method: req.method || null,
-        route: req.url?.split('/api/').slice(-1)[0] || null,
+        route: req.url?.replace(/^\/api\//, '') || null,
         resStatusCode: res.statusCode,
         time: Date.now()
     };

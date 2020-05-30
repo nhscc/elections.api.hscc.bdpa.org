@@ -106,7 +106,7 @@ describe('universe/backend/middleware', () => {
                         'key': '5db4c4d3-294a-4086-9751-f3fce82d11e4'
                     };
 
-                    req.url = 'https://fake.com/api/v1/handlerX';
+                    req.url = '/api/v1/handlerX';
                 },
                 next: (req: NextApiRequest, res: NextApiResponse) => Middleware.handleEndpoint(async ({ res }) => {
                     res.status(genStatus.next().value || 0).send({});

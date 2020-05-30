@@ -1053,7 +1053,7 @@ describe('universe/backend', () => {
             const req1 = {
                 headers: { 'x-forwarded-for': '9.9.9.9' },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             const req2 = {
@@ -1062,7 +1062,7 @@ describe('universe/backend', () => {
                     'key': Backend.NULL_KEY
                 },
                 method: 'GET',
-                url: 'https://fake.com/api/route/path2'
+                url: '/api/route/path2'
             } as unknown as NextApiRequest;
 
             const res1 = { statusCode: 1111 } as NextApiResponse;
@@ -1107,7 +1107,7 @@ describe('universe/backend', () => {
             const req1 = {
                 headers: { 'x-forwarded-for': '1.2.3.4' },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             const req2 = {
@@ -1116,7 +1116,7 @@ describe('universe/backend', () => {
                     'key': Backend.NULL_KEY
                 },
                 method: 'GET',
-                url: 'http://fake.com/api/route/path2'
+                url: '/api/route/path2'
             } as unknown as NextApiRequest;
 
             const req3 = {
@@ -1125,7 +1125,7 @@ describe('universe/backend', () => {
                     'key': 'fake-key'
                 },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             const req4 = {
@@ -1133,7 +1133,7 @@ describe('universe/backend', () => {
                     'x-forwarded-for': '5.6.7.8',
                 },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             expect(await Backend.isRateLimited(req1)).toEqual(true);
@@ -1146,7 +1146,7 @@ describe('universe/backend', () => {
             const req1 = {
                 headers: { 'x-forwarded-for': '1.2.3.5' },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             const req2 = {
@@ -1155,7 +1155,7 @@ describe('universe/backend', () => {
                     'key': 'fake-key'
                 },
                 method: 'GET',
-                url: 'http://fake.com/api/route/path2'
+                url: '/api/route/path2'
             } as unknown as NextApiRequest;
 
             expect(await Backend.isRateLimited(req1)).toEqual(false);
@@ -1166,7 +1166,7 @@ describe('universe/backend', () => {
             const req = {
                 headers: { 'x-forwarded-for': '1.2.3.4' },
                 method: 'POST',
-                url: 'http://fake.com/api/route/path1'
+                url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
             expect(await Backend.isRateLimited(req)).toEqual(true);
