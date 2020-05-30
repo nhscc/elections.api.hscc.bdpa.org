@@ -1,8 +1,8 @@
 {
     "routes": [
-        { "source": "/api", "status": 404, "dest": "/404" },
-        { "source": "/v1", "status": 404, "dest": "/404" },
-        { "source": "/v2", "status": 404, "dest": "/404" },
+        { "src": "/api", "status": 404, "dest": "/404" },
+        { "src": "/v1",  "status": 404, "dest": "/404" },
+        { "src": "/v2",  "status": 404, "dest": "/404" },
         { "handle": "filesystem" }
     ]
 }
