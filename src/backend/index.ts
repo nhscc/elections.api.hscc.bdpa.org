@@ -3,7 +3,6 @@ import { getEnv } from 'universe/backend/env'
 import { getDb } from 'universe/backend/db'
 import { isUndefined, isArray } from 'util'
 import { getClientIp } from 'request-ip'
-import { URL } from 'url'
 
 import {
     LimitTypeError,

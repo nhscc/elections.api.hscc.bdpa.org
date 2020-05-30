@@ -15,7 +15,8 @@
     "regenerate": "gulp regenerate",
     "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
-    "preinstall": "npx npm-force-resolutions"
+    "preinstall": "npx npm-force-resolutions",
+    "check-types": "tsc && echo 'no problems detected!'"
   },
   "author": "Xunnamius",
   "license": "ISC",
