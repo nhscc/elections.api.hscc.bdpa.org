@@ -64,7 +64,7 @@ export type RequestLogEntry = {
     time: number;
 };
 
-export type LimitedEntry = {
+export type LimitedLogEntry = {
     until: number;
     ip: string | null;
     key: string | null;

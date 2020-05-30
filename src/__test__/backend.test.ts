@@ -5,18 +5,19 @@ import { getEnv } from 'universe/backend/env'
 import { populateEnv } from 'universe/dev-utils'
 import randomInt from 'random-int'
 
-import type{ NextApiRequest, NextApiResponse } from 'next'
 import {
     InternalElection,
     NewElection,
     PatchElection,
     PublicElection,
     RequestLogEntry,
-    VoterRanking
+    VoterRanking,
+    LimitedLogEntry
 } from 'types/global'
 
+import type{ NextApiRequest, NextApiResponse } from 'next'
+
 populateEnv();
-//jest.setTimeout(100000);
 
 const { getHydratedData, getDb } = setupJest();
 
@@ -28,17 +29,17 @@ const getExpectedMeta = () => {
     };
 
     unhydratedDummyDbData.elections.forEach(election => {
-        election.closes <= Date.now()
+        !election.deleted && (election.closes <= Date.now()
             ? expectedMeta.closedElections++
-            : (election.opens > Date.now() ? expectedMeta.upcomingElections++ : expectedMeta.openElections++);
+            : (election.opens > Date.now() ? expectedMeta.upcomingElections++ : expectedMeta.openElections++));
     });
 
     return expectedMeta;
-}
+};
 
 describe('universe/backend', () => {
     describe('::getElectionMetadata', () => {
-        it('returns expected metadata',
+        it('returns expected metadata (does not count deleted elections)',
             async () => expect(await Backend.getElectionMetadata()).toEqual(getExpectedMeta()));
     });
 
@@ -1159,6 +1160,23 @@ describe('universe/backend', () => {
 
             expect(await Backend.isRateLimited(req1)).toEqual(false);
             expect(await Backend.isRateLimited(req2)).toEqual(false);
+        });
+
+        it('returns false if "until" time has passed', async () => {
+            const req = {
+                headers: { 'x-forwarded-for': '1.2.3.4' },
+                method: 'POST',
+                url: 'http://fake.com/api/route/path1'
+            } as unknown as NextApiRequest;
+
+            expect(await Backend.isRateLimited(req)).toEqual(true);
+
+            await (await getDb()).collection<LimitedLogEntry>('limited-log-mview').updateOne(
+                { ip: '1.2.3.4' },
+                { $set: { until: Date.now() - 10**5 }}
+            );
+
+            expect(await Backend.isRateLimited(req)).toEqual(false);
         });
     });
 

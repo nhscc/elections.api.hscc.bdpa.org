@@ -1,4 +1,29 @@
-import { sendHttpErrorResponse } from 'multiverse/respond'
+import {
+    sendHttpErrorResponse,
+    sendHttpUnauthenticated,
+    sendHttpBadMethod,
+    sendNotImplementedError,
+    sendHttpError,
+    sendHttpNotFound,
+    sendHttpUnauthorized,
+    sendHttpBadRequest,
+    sendHttpRateLimited,
+} from 'multiverse/respond'
+
+import {
+    GuruMeditationError,
+    NotFoundError,
+    NotAuthorizedError,
+    UpsertFailedError,
+    IdTypeError,
+    ApiKeyTypeError,
+    LimitTypeError,
+    ValidationError,
+    AppError
+} from 'universe/backend/error'
+
+import { isKeyAuthentic, addToRequestLog, isDueForContrivedError, isRateLimited } from 'universe/backend'
+import { getEnv } from 'universe/backend/env'
 
 import type { NextApiResponse } from 'next'
 import type { NextParamsRR } from 'types/global'
@@ -6,12 +31,14 @@ import type { NextParamsRR } from 'types/global'
 export type GenHanParams = NextParamsRR & { methods: string[] };
 export type AsyncHanCallback = (params: NextParamsRR) => Promise<void>;
 
-export function sendHttpContrivedError(res: NextApiResponse, responseJson: object) {
+export function sendHttpContrivedError(res: NextApiResponse, responseJson?: object) {
     sendHttpErrorResponse(res, 555, {
         error: '(note: do not report this contrived error)',
         ...responseJson
     });
 }
+
+export const config = { api: { bodyParser: { sizeLimit: getEnv().MAX_CONTENT_LENGTH_BYTES }}};
 
 /**
  * Generic middleware to handle any api endpoint. You can give it an empty async
@@ -19,36 +46,64 @@ export function sendHttpContrivedError(res: NextApiResponse, responseJson: objec
  * endpoints).
  */
 export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
-    void req, res, methods, fn;
-    // if(!req.method || !methods.includes(req.method))
-    //     res.status(405).send({ error: `method ${req.method} is not allowed` });
+    if(getEnv().LOCKOUT_ALL_KEYS || typeof req.headers.key != 'string' || !(await isKeyAuthentic(req.headers.key)))
+        sendHttpUnauthenticated(res);
 
-    // else {
-    //     try {
-    //         const resp = res as NextApiResponse<object> & { $send: typeof res.send };
-    //         // ? This will let us know if the sent method was called
-    //         let sent = false;
+    else if(!req.method || getEnv().DISALLOWED_METHODS.includes(req.method) || !methods.includes(req.method))
+        sendHttpBadMethod(res);
 
-    //         resp.$send = resp.send;
-    //         resp.send = (...args): void => (sent = true) && resp.$send(...args);
+    else {
+        try {
+            if(isDueForContrivedError())
+                sendHttpContrivedError(res);
 
-    //         await fn({ req, res: resp });
+            else {
+                const resp = res as typeof res & { $send: typeof res.send };
+                // ? This will let us know if the sent method was called
+                let sent = false;
 
-    //         // ? If the response hasn't been sent yet, send one now
-    //         !sent && resp.status(400).send({ error: 'bad request' });
-    //     }
-    //     catch(error) { res.status(400).send({ error: error.message }); }
-    // }
-}
+                resp.$send = resp.send;
+                resp.send = (...args): void => {
+                    sent = true;
+                    addToRequestLog({ req, res });
+                    resp.$send(...args);
+                };
 
-/**
- * Generic middleware to handle any api endpoint with required authentication
- */
-export async function handleAuthedEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
-    void req, res, methods, fn;
-    // if(!await isAuthed({ req, res }))
-    //     res.status(401).send({error: 'missing authentication key' });
+                if(!getEnv().IGNORE_RATE_LIMITS && await isRateLimited(req))
+                    sendHttpRateLimited(res);
 
-    // else
-    //     await handleEndpoint(fn, { req, res, methods });
+                else {
+                    await fn({ req, res: resp });
+
+                    // ? If the response hasn't been sent yet, send one now
+                    !sent && sendNotImplementedError(res);
+                }
+            }
+        }
+
+        catch(error) {
+            if(error instanceof GuruMeditationError)
+                sendHttpError(res, { error: 'sanity check failed: please report exactly what you did just now!' });
+
+            else if((error instanceof UpsertFailedError) ||
+              (error instanceof IdTypeError) ||
+              (error instanceof ApiKeyTypeError) ||
+              (error instanceof LimitTypeError) ||
+              (error instanceof ValidationError)) {
+                sendHttpBadRequest(res, { ...(error.message ? { error: error.message } : {}) });
+            }
+
+            else if(error instanceof NotAuthorizedError)
+                sendHttpUnauthorized(res);
+
+            else if(error instanceof NotFoundError)
+                sendHttpNotFound(res);
+
+            else if(error instanceof AppError)
+                sendHttpError(res, { ...(error.message ? { error: error.message } : {}) });
+
+            else
+                sendHttpError(res);
+        }
+    }
 }

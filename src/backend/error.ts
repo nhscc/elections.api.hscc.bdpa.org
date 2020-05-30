@@ -1,5 +1,6 @@
 export class AppError extends Error {}
 export class GuruMeditationError extends AppError {}
+export class NotAuthorizedError extends AppError {}
 
 export class UpsertFailedError extends AppError {
     constructor(message?: string) {
@@ -39,6 +40,6 @@ export class LimitTypeError extends AppError {
 
 export class ValidationError extends AppError {
     constructor(message?: string) {
-        super(message ? `validation error: ${message}` : 'validation check failed');
+        super(message ? `validation error: ${message}` : 'validation failed');
     }
 }

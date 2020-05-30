@@ -40,10 +40,9 @@ module.exports = (): object => {
         // !! DO NOT PUT ANY SECRET ENVIRONMENT VARIABLES HERE !!
         env: {
             MAX_LIMIT: process.env.MAX_LIMIT,
-            LIMIT_OVERRIDE: process.env.LIMIT_OVERRIDE,
-            DISABLE_RATE_LIMITS: process.env.DISABLE_RATE_LIMITS,
+            IGNORE_RATE_LIMITS: process.env.IGNORE_RATE_LIMITS,
             LOCKOUT_ALL_KEYS: process.env.LOCKOUT_ALL_KEYS,
-            DISALLOW_WRITES: process.env.DISALLOW_WRITES,
+            DISALLOWED_METHODS: process.env.DISALLOWED_METHODS,
             REQUESTS_PER_CONTRIVED_ERROR: process.env.REQUESTS_PER_CONTRIVED_ERROR,
             MAX_OPTIONS_PER_ELECTION: process.env.MAX_OPTIONS_PER_ELECTION,
             MAX_RANKINGS_PER_ELECTION: process.env.MAX_RANKINGS_PER_ELECTION,

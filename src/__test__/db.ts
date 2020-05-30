@@ -14,7 +14,7 @@ import type {
     ElectionRankings,
     ApiKey,
     RequestLogEntry,
-    LimitedEntry,
+    LimitedLogEntry,
     InDbElection
 } from 'types/global'
 
@@ -182,9 +182,9 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
         })));
     }
 
-    // Push new requests to the log and update limited-mview accordingly
+    // Push new requests to the log and update limited-log-mview accordingly
     const requestLogDb = db.collection<WithId<RequestLogEntry>>('request-log');
-    const mviewDb = db.collection<WithId<LimitedEntry>>('limited-mview');
+    const mviewDb = db.collection<WithId<LimitedLogEntry>>('limited-log-mview');
 
     await requestLogDb.insertMany([...Array(20)].map((_, ndx) => ({
         ip: '1.2.3.4',

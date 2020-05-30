@@ -24,7 +24,7 @@ export async function destroyDb(db: Db) {
         db.dropCollection('elections'),
         db.dropCollection('rankings'),
         db.dropCollection('request-log'),
-        db.dropCollection('limited-mview')
+        db.dropCollection('limited-log-mview')
     ]);
 }
 
@@ -41,6 +41,6 @@ export async function initializeDb(db: Db): Promise<void> {
         db.createCollection('elections'),
         db.createCollection('rankings'),
         db.createCollection('request-log', { capped: true, size: 1000000, max: 10000 }),
-        db.createCollection('limited-mview'),
+        db.createCollection('limited-log-mview'),
     ]);
 }

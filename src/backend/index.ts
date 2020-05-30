@@ -26,7 +26,7 @@ import {
     VoterRanking,
     NextParamsRR,
     RequestLogEntry,
-    LimitedEntry,
+    LimitedLogEntry,
     InDbElection,
     ApiKey
 } from 'types/global'
@@ -54,6 +54,7 @@ export async function getElectionMetadata(): Promise<Metadata> {
     return {
         ...meta,
         ...await (await getDb()).collection<InDbElection>('elections').aggregate([
+            { $match: { deleted: false } },
             {
                 $group: {
                     _id: null,
@@ -367,16 +368,21 @@ export async function isRateLimited(req: NextApiRequest): Promise<boolean> {
     const ip = getClientIp(req);
     const key = req.headers?.key?.toString() || null;
 
-    return !!await (await getDb()).collection<WithId<LimitedEntry>>('limited-mview').find({
-        $or: [...(ip ? [{ ip }]: []), ...(key ? [{ key }]: [])]
+    return !!await (await getDb()).collection<WithId<LimitedLogEntry>>('limited-log-mview').find({
+        $or: [...(ip ? [{ ip }]: []), ...(key ? [{ key }]: [])],
+        until: { $gt: Date.now() }
     }).limit(1).count();
 }
 
 export function isDueForContrivedError(): boolean {
-    if(++requestCounter >= getEnv().REQUESTS_PER_CONTRIVED_ERROR) {
+    const reqPerErr = getEnv().REQUESTS_PER_CONTRIVED_ERROR;
+
+    if(reqPerErr && ++requestCounter >= reqPerErr) {
         requestCounter = 0;
         return true;
     }
 
     return false;
 }
+
+export function resetContrivedErrorCounter(): void { requestCounter = 0; }

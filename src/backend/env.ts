@@ -4,13 +4,13 @@ import isServer from 'multiverse/is-server-side'
 
 export function getEnv(silent=false) {
     const env = {
+
         NODE_ENV: process.env.NODE_ENV || process.env.BABEL_ENV || process.env.APP_ENV || 'unknown',
         MONGODB_URI: (process.env.MONGODB_URI || '').toString(),
         MAX_LIMIT: parseInt(process.env.MAX_LIMIT ?? '-Infinity'),
-        LIMIT_OVERRIDE: parseInt(process.env.LIMIT_OVERRIDE ?? '-Infinity'),
-        DISABLE_RATE_LIMITS: !!process.env.DISABLE_RATE_LIMITS && process.env.DISABLE_RATE_LIMITS !== 'false',
+        IGNORE_RATE_LIMITS: !!process.env.IGNORE_RATE_LIMITS && process.env.IGNORE_RATE_LIMITS !== 'false',
         LOCKOUT_ALL_KEYS: !!process.env.LOCKOUT_ALL_KEYS && process.env.LOCKOUT_ALL_KEYS !== 'false',
-        DISALLOW_WRITES: !!process.env.DISALLOW_WRITES && process.env.DISALLOW_WRITES !== 'false',
+        DISALLOWED_METHODS: !!process.env.DISALLOWED_METHODS ? process.env.DISALLOWED_METHODS.split(',') : [],
         REQUESTS_PER_CONTRIVED_ERROR: parseInt(process.env.REQUESTS_PER_CONTRIVED_ERROR ?? '-Infinity'),
         MAX_OPTIONS_PER_ELECTION: parseInt(process.env.MAX_OPTIONS_PER_ELECTION || '-Infinity'),
         MAX_RANKINGS_PER_ELECTION: parseInt(process.env.MAX_RANKINGS_PER_ELECTION || '-Infinity'),
@@ -19,7 +19,6 @@ export function getEnv(silent=false) {
 
     const _mustBeGtZero = [
         env.MAX_LIMIT,
-        env.LIMIT_OVERRIDE,
         env.REQUESTS_PER_CONTRIVED_ERROR,
         env.MAX_OPTIONS_PER_ELECTION,
         env.MAX_RANKINGS_PER_ELECTION,
@@ -33,10 +32,9 @@ export function getEnv(silent=false) {
     // NODE_ENV: ${NODE_ENV}
     // env.MONGODB_URI: ${env.MONGODB_URI}
     // env.MAX_LIMIT: ${env.MAX_LIMIT}
-    // env.LIMIT_OVERRIDE: ${env.LIMIT_OVERRIDE}
-    // env.DISABLE_RATE_LIMITS: ${env.DISABLE_RATE_LIMITS}
+    // env.IGNORE_RATE_LIMITS: ${env.IGNORE_RATE_LIMITS}
     // env.LOCKOUT_ALL_KEYS: ${env.LOCKOUT_ALL_KEYS}
-    // env.DISALLOW_WRITES: ${env.DISALLOW_WRITES}
+    // env.DISALLOWED_METHODS: ${env.DISALLOWED_METHODS}
     // env.REQUESTS_PER_CONTRIVED_ERROR: ${env.REQUESTS_PER_CONTRIVED_ERROR}
     // env.MAX_OPTIONS_PER_ELECTION: ${env.MAX_OPTIONS_PER_ELECTION}
     // env.MAX_RANKINGS_PER_ELECTION: ${env.MAX_RANKINGS_PER_ELECTION}
