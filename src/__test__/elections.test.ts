@@ -82,5 +82,5 @@ describe('api/v1/elections', () => {
         });
     });
 
-    test.todo('need to test that endpoint returns data as expected, works with query parameters and handles pagination (limit/offset) properly, returns in LIFO order by default, errors if query parameters are provided during non-GET, validates data on POST, limits larger than 50 (or w/e max is) trigger http400 (pagination limited to 50), offsets that are too large return nothing without error, non-existent offsets?, public vs private data, when limit = 0?');
+    test.todo('need to test that endpoint returns data as expected, works with query parameters and handles pagination (limit/offset) properly, returns in LIFO order by default, errors if query parameters are provided during non-GET, validates data on POST, limits larger than 50 (or w/e max is) trigger http400 (pagination limited to 50), offsets that are too large return nothing without error, non-existent offsets?, public vs private data, when limit = 0??');
 });
