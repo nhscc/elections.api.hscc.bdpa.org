@@ -41,7 +41,7 @@ export default function Index({ previouslyHydratedDb, shouldHydrateDb, isInProdu
     if(previouslyHydratedDb)
         status = (<span style={{ color: 'green' }}>previously hydrated</span>);
 
-    else if(shouldHydrateDb)
+    if(shouldHydrateDb)
         status = (<span style={{ color: 'darkred' }}>hydrated</span>);
 
     return (

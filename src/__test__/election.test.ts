@@ -51,7 +51,7 @@ const internalToPublic = (e: InternalElection[]) => {
     });
 };
 
-describe('api/v1/election', async () => {
+describe('api/v1/election', () => {
     it('requests without a key return 401', async () => {
         await testApiEndpoint({
             next: electionEndpoint,
@@ -92,7 +92,7 @@ describe('api/v1/election', async () => {
     it('returns only public and no private/internal election data', async () => {
         await testApiEndpoint({
             next: electionEndpoint,
-            params: { id: getHydratedData().elections[22].election_id },
+            params: { id: getHydratedData().elections[22].election_id.toHexString() },
             test: async ({ fetch }) => {
                 const response = await fetch({ headers: { KEY } });
                 const { success, ...election } = await response.json();
@@ -109,13 +109,13 @@ describe('api/v1/election', async () => {
 
         await testApiEndpoint({
             next: electionEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const mutation = {
-                    election_id,
                     title: 'Flip mode!',
                     description: 'Flip mode family ties',
                     options: ['A', 'B', 'Z'],
+                    opens: Date.now() + 10**7,
                     closes: Date.now() + 10**8
                 };
 
@@ -139,14 +139,14 @@ describe('api/v1/election', async () => {
 
         await testApiEndpoint({
             next: electionEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 expect(await doesElectionExist(election_id)).toBeTrue();
 
                 const response = await fetch({ method: 'DELETE', headers: { KEY }});
 
                 expect(response.status).toBe(200);
-                expect(await doesElectionExist(election_id)).toBeFalse();
+                expect((await getPublicElection({ electionId: election_id, key: KEY })).deleted).toBeTrue();
             }
         });
     });
@@ -158,29 +158,27 @@ describe('api/v1/election', async () => {
             yield { data: 1 };
             yield { title: '', created: Date.now() };
             yield { title: 'test election', options: [{}, {}], opens: Date.now() + 10**4, closes: Date.now() + 10**5 };
-            yield { title: 'my title', opens: Date.now() - 1000, closes: Date.now() + 10**5 };
             yield { title: 'my title #2', opens: Date.now() + 10**7, closes: Date.now() + 10**5 };
             yield { title: 'my title #3', opens: Date.now() + 10**5, closes: Date.now() + 10**7, description: 54 };
             yield { title: 'my title #4', opens: Date.now() + 10**5, closes: Date.now() + 10**7, options: [54] };
             yield { title: 'my title #5', opens: Date.now() + 10**5, closes: Infinity };
             yield { title: 'my title #6', opens: Date.now() + 10**5, closes: NaN };
-            yield { title: 'my title #7', opens: undefined, closes: undefined };
             yield { title: 'my title #7', election_id: (new ObjectId()).toHexString() };
             yield {};
         }();
 
         await testApiEndpoint({
             next: electionEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
-                const responses = await Promise.all([...Array(12)].map(_ => fetch({
+                const responses = await Promise.all([...Array(10)].map(_ => fetch({
                     method: 'PUT',
                     headers: { KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify(getInvalidData.next().value)
                 }).then(r => r.status)));
 
                 expect(responses).toEqual([
-                    ...[...Array(12)].map(_ => 400)
+                    ...[...Array(10)].map(_ => 400)
                 ]);
             }
         });
@@ -191,7 +189,7 @@ describe('api/v1/election', async () => {
 
         await testApiEndpoint({
             next: electionEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 expect(await doesElectionExist(election_id)).toBeTrue();
 
