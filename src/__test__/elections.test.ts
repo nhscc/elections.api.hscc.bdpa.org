@@ -2,8 +2,11 @@ import { setupJest } from 'universe/__test__/db'
 import { testApiEndpoint } from 'multiverse/test-api-endpoint'
 import * as Elections from 'universe/pages/api/v1/elections'
 import { getEnv } from 'universe/backend/env'
+import { ObjectId } from 'mongodb'
 
-const { getHydratedData } = setupJest();
+import type { PublicElection, InternalElection } from 'types/global'
+
+const { getHydratedData, getDb } = setupJest();
 
 const electionsEndpoint: typeof Elections.default & { config?: object } = Elections.default;
 electionsEndpoint.config = Elections.config;
@@ -12,11 +15,42 @@ process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
 
 const KEY = '5db4c4d3-294a-4086-9751-f3fce82d11e4';
 
+const containsOnlyPublicData = (o: object) => {
+    const {
+        title,
+        election_id,
+        closes,
+        created,
+        deleted,
+        description,
+        opens,
+        options,
+        owned,
+        ...rest
+    } = o as PublicElection;
+
+    return !Object.keys(rest).length;
+};
+
+const internalToPublic = (e: InternalElection[]) => {
+    return e.map(election => {
+        const { title, election_id, closes, created, deleted, description, opens, options, owner } = election;
+
+        return {
+            election_id: election_id.toHexString(),
+            title,
+            created,
+            opens,
+            closes,
+            description,
+            options,
+            deleted,
+            owned: owner == KEY
+        } as Omit<PublicElection, 'election_id'> & { election_id: string };
+    });
+};
+
 describe('api/v1/elections', () => {
-    test.todo('clients are forbidden from using PUT methods on elections owned by another key');
-
-    test.todo('clients can use PUT methods on elections they own');
-
     it('requests without a key return 401', async () => {
         await testApiEndpoint({
             next: electionsEndpoint,
@@ -57,7 +91,7 @@ describe('api/v1/elections', () => {
         });
     });
 
-    it('returns data as expected', async () => {
+    it('returns expected number of elections by default in FIFO order', async () => {
         await testApiEndpoint({
             next: electionsEndpoint,
             test: async ({ fetch }) => {
@@ -65,22 +99,232 @@ describe('api/v1/elections', () => {
                 const json = await response.json();
 
                 const elections = getHydratedData().elections;
-                void elections;
 
                 expect(response.status).toBe(200);
-
-                expect(json).toContainAllKeys([
-                    'closedElections',
-                    'openElections',
-                    'success',
-                    'upcomingElections'
-                ]);
-
                 expect(json.success).toBe(true);
-                //expect(json.closedElections + json.openElections + json.upcomingElections).toBe();
+                expect(json.elections).toEqual(internalToPublic(elections.slice(0, 15)));
             }
         });
     });
 
-    test.todo('need to test that endpoint returns data as expected, works with query parameters and handles pagination (limit/offset) properly, returns in LIFO order by default, errors if query parameters are provided during non-GET, validates data on POST, limits larger than 50 (or w/e max is) trigger http400 (pagination limited to 50), offsets that are too large return nothing without error, non-existent offsets?, public vs private data, when limit = 0??');
+    it('returns expected number of elections in FIFO order respecting limit and offset (after)', async () => {
+        const elections = internalToPublic(getHydratedData().elections);
+
+        const genUrl = function*() {
+            yield `/?limit=1`;
+            yield `/?limit=5`;
+            yield `/?limit=10`;
+            yield `/?limit=50`;
+            yield `/?limit=50&after=${elections[0].election_id}`;
+            yield `/?limit=50&after=${elections[10].election_id}`;
+            yield `/?after=${elections[45].election_id}`;
+            yield `/?limit=30&after=${elections[20].election_id}`;
+        }();
+
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = genUrl.next().value || undefined },
+
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const responses = await Promise.all([...Array(8)].map(_ => {
+                    return fetch({ headers: { KEY } }).then(r => r.ok ? r.json() : null);
+                }));
+
+                expect(responses.some(o => !o?.success)).toBeFalse();
+
+                expect(responses[0].elections).toEqual(elections.slice(0, 1));
+                expect(responses[1].elections).toEqual(elections.slice(0, 5));
+                expect(responses[2].elections).toEqual(elections.slice(0, 10));
+                expect(responses[3].elections).toEqual(elections.slice(0, 50));
+                expect(responses[4].elections).toEqual(elections.slice(1, 51));
+                expect(responses[5].elections).toEqual(elections.slice(11, 61));
+                expect(responses[6].elections).toEqual(elections.slice(46, 61));
+                expect(responses[7].elections).toEqual(elections.slice(21, 51));
+            }
+        });
+    });
+
+    it('does the right thing when garbage params are provided', async () => {
+        const genUrl = function*() {
+            yield `/?limit=-5`;
+            yield `/?limit=a`;
+            yield `/?limit=`;
+            yield `/?limit=@($)`;
+            yield `/?limit=1&after=`;
+            yield `/?limit=2&after=xyz`;
+            yield `/?limit=3&after=123`;
+            yield `/?after=(*$)`;
+        }();
+
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = genUrl.next().value || undefined },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const responses = await Promise.all([...Array(8)].map(_ => {
+                    return fetch({ headers: { KEY } }).then(r => r.status);
+                }));
+
+                expect(responses[0]).toBe(400);
+                expect(responses[1]).toBe(200);
+                expect(responses[2]).toBe(200);
+                expect(responses[3]).toBe(200);
+                expect(responses[4]).toBe(200);
+                expect(responses[5]).toBe(404);
+                expect(responses[6]).toBe(404);
+                expect(responses[7]).toBe(404);
+            }
+        });
+    });
+
+    it('returns only public and no private/internal election data', async () => {
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = '/?limit=5' },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response = await fetch({ headers: { KEY } });
+                const json = await response.json();
+
+                expect(response.status).toBe(200);
+                expect(json.success).toBe(true);
+                expect(json.elections.some((o: object) => !containsOnlyPublicData(o))).toBeFalse();
+            }
+        });
+    });
+
+    it('returns a 400 error when query parameters are provided during POST requests', async () => {
+        const elections = getHydratedData().elections;
+        const genUrl = function*() {
+            yield `/?limit=1`;
+            yield `/?after=${elections[0].election_id}`;
+        }();
+
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = genUrl.next().value || undefined },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response1 = await fetch({ method: 'POST', headers: { KEY } });
+                const response2 = await fetch({ method: 'POST', headers: { KEY } });
+                const json1 = await response1.json();
+                const json2 = await response2.json();
+
+                expect(response1.status).toBe(400);
+                expect(response2.status).toBe(400);
+                expect(json1.error).toBe('query parameters are only allowed with GET requests');
+                expect(json2.error).toBe('query parameters are only allowed with GET requests');
+            }
+        });
+    });
+
+    it('returns a 400 error when limit > MAX_LIMIT', async () => {
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = `/?limit=${getEnv().MAX_LIMIT + 1}` },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response = await fetch({ headers: { KEY } });
+                const json = await response.json();
+
+                expect(response.status).toBe(400);
+                expect(json.error).toBeString();
+            }
+        });
+    });
+
+    it('returns a 404 if the offset is valid but does not exist', async () => {
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = `/?after=abcd1234` },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response = await fetch({ headers: { KEY } });
+                const json = await response.json();
+
+                expect(response.status).toBe(404);
+                expect(json.error).toBeDefined();
+            }
+        });
+    });
+
+    it('limit=0 returns an empty array', async () => {
+        const elections = getHydratedData().elections;
+        const genUrl = function*() {
+            yield `/?limit=0&after=${elections[0].election_id}`;
+            yield `/?limit=0`;
+        }();
+
+        await testApiEndpoint({
+            requestPatcher: req => { req.url = genUrl.next().value || undefined },
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response1 = await fetch({ headers: { KEY } });
+                const response2 = await fetch({ headers: { KEY } });
+                const json1 = await response1.json();
+                const json2 = await response2.json();
+
+                expect(response1.status).toBe(200);
+                expect(response2.status).toBe(200);
+                expect(json1.success).toBeTrue();
+                expect(json2.success).toBeTrue();
+                expect(json1.elections).toEqual([]);
+                expect(json2.elections).toEqual([]);
+            }
+        });
+    });
+
+    it('can use POST to create an election', async () => {
+        await testApiEndpoint({
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const response = await fetch({
+                    method: 'POST',
+                    headers: { KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        title: 'My Election',
+                        description: '',
+                        options: [],
+                        opens: Date.now() + 10**4,
+                        closes: Date.now() + 10**6
+                    })
+                });
+
+                expect(response.status).toBe(200);
+
+                const election_id = (await response.json()).election_id;
+
+                expect(election_id).toBeDefined();
+
+                expect(await (await getDb()).collection('elections').find({
+                    _id: new ObjectId(election_id)
+                }).count()).toBe(1);
+            }
+        });
+    });
+
+    it('returns a 400 error on invalid data during POST', async () => {
+        const getInvalidData = function*() {
+            yield { data: 1 };
+            yield { title: '', created: Date.now() };
+            yield { title: 'test election', options: [{}, {}], opens: Date.now() + 10**4, closes: Date.now() + 10**5 };
+            yield { title: 'my title', opens: Date.now() - 1000, closes: Date.now() + 10**5 };
+            yield { title: 'my title #2', opens: Date.now() + 10**7, closes: Date.now() + 10**5 };
+            yield { title: 'my title #3', opens: Date.now() + 10**5, closes: Date.now() + 10**7, description: 54 };
+            yield { title: 'my title #4', opens: Date.now() + 10**5, closes: Date.now() + 10**7, options: [54] };
+            yield { title: 'my title #5', opens: Date.now() + 10**5, closes: Infinity };
+            yield { title: 'my title #6', opens: Date.now() + 10**5, closes: NaN };
+            yield { title: 'my title #7', opens: undefined, closes: undefined };
+        }();
+
+        await testApiEndpoint({
+            next: electionsEndpoint,
+            test: async ({ fetch }) => {
+                const responses = await Promise.all([...Array(10)].map(_ => fetch({
+                    method: 'POST',
+                    headers: { KEY, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(getInvalidData.next().value)
+                }).then(r => r.status)));
+
+                expect(responses).toEqual([
+                    ...[...Array(10)].map(_ => 400)
+                ]);
+            }
+        });
+    });
 });

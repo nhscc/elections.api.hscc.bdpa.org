@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { getEnv } from 'universe/backend/env'
 import { getDb } from 'universe/backend/db'
-import { isUndefined, isArray } from 'util'
+import { isUndefined, isArray, isNumber } from 'util'
 import { getClientIp } from 'request-ip'
 
 import {
@@ -90,7 +90,7 @@ export async function getElectionMetadata(): Promise<Metadata> {
 export async function getPublicElections(opts: GetPubEleParams): Promise<AggregationCursor<PublicElection>> {
     const { limit, after, key } = { limit: DEFAULT_RESULT_LIMIT, after: null, ...opts };
 
-    if(typeof limit != 'number' || limit <= 0 || limit > getEnv().MAX_LIMIT)
+    if(!isNumber(limit) || limit <= 0 || limit > getEnv().MAX_LIMIT)
         throw new LimitTypeError(limit);
 
     if(after !== undefined && after !== null && !(after instanceof ObjectId))
@@ -173,7 +173,7 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
     if(!isUndefined(electionData.title) && (!electionData.title || typeof electionData.title != 'string'))
         throw new ValidationError('invalid property "title"');
 
-    if(!isUndefined(electionData.description) && typeof electionData.title != 'string')
+    if(!isUndefined(electionData.description) && typeof electionData.description != 'string')
         throw new ValidationError('invalid property "description"');
 
     if(!isUndefined(electionData.options) && (
@@ -182,10 +182,10 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
         throw new ValidationError('invalid property "options"');
       }
 
-    if(!isUndefined(electionData.opens) && typeof electionData.opens != 'number')
+    if(!isUndefined(electionData.opens) && !isNumber(electionData.opens))
         throw new ValidationError('invalid property "opens"');
 
-    if(!isUndefined(electionData.closes) && typeof electionData.closes != 'number')
+    if(!isUndefined(electionData.closes) && !isNumber(electionData.closes))
         throw new ValidationError('invalid property "closes"');
 
     if(electionId) {
@@ -386,5 +386,3 @@ export function isDueForContrivedError(): boolean {
 
     return false;
 }
-
-export function resetContrivedErrorCounter(): void { requestCounter = 0; }

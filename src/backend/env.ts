@@ -1,6 +1,7 @@
 import { isNumber } from 'util'
 import { parse as parseAsBytes } from 'bytes'
 import isServer from 'multiverse/is-server-side'
+import { DEFAULT_RESULT_LIMIT } from 'universe/backend'
 
 export function getEnv(silent=false) {
     const env = {
@@ -49,6 +50,9 @@ export function getEnv(silent=false) {
        _mustBeGtZero.some(v => !isNumber(v) || v < 0)) {
         throw new Error('illegal environment detected, check environment variables');
     }
+
+    if(env.MAX_LIMIT < DEFAULT_RESULT_LIMIT)
+        throw new Error('MAX_LIMIT must be >= DEFAULT_RESULT_LIMIT (got ${env.MAX_LIMIT} < ${DEFAULT_RESULT_LIMIT} instead)');
 
     return env;
 }

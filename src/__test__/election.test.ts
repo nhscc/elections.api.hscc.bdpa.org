@@ -50,7 +50,7 @@ describe('api/v1/election', () => {
         });
     });
 
-    it('returns data as expected', async () => {
+    it('returns only public and no private/internal election data', async () => {
         await testApiEndpoint({
             next: electionEndpoint,
             test: async ({ fetch }) => {
@@ -60,20 +60,19 @@ describe('api/v1/election', () => {
                 const elections = getHydratedData().elections;
                 void elections;
 
-                //expect(response.status).toBe(200);
-
-                expect(json).toContainAllKeys([
-                    'closedElections',
-                    'openElections',
-                    'success',
-                    'upcomingElections'
-                ]);
-
+                expect(response.status).toBe(200);
                 expect(json.success).toBe(true);
-                //expect(json.closedElections + json.openElections + json.upcomingElections).toBe();
             }
         });
-
-        test.todo('need to test that endpoint returns data as expected, validates data on POST, error if election DNE, public vs private data');
     });
+
+    test.todo('can use PUT to mutate an election');
+
+    test.todo('can use DELETE to delete an election');
+
+    test.todo('returns a 400 error on invalid data during PUT');
+
+    test.todo('returns a 403 error when trying to PUT or DELETE with an election_id owned by a different key');
+
+    test.todo('returns a 404 error if election_id does not exist');
 });
