@@ -22,7 +22,7 @@ const regenTargets = [
 
 // * CHECKENV
 
-export const checkEnv = async (): Promise<void> => populateEnv();
+export const checkEnv = async () => populateEnv();
 
 checkEnv.description = `Throws an error if any expected environment variables are not properly set `
     + `(see expectedEnvVariables key in package.json)`;
@@ -33,7 +33,7 @@ checkEnv.description = `Throws an error if any expected environment variables ar
 // ? compile this new function and once again to compile itself with the newly
 // ? compiled logic. If there is an error that prevents regeneration, you can
 // ? run `npm run generate` then `npm run regenerate` instead.
-export const regenerate = (): NodeJS.ReadWriteStream => {
+export const regenerate = () => {
     populateEnv();
 
     log(`Regenerating targets: "${regenTargets.join('" "')}"`);

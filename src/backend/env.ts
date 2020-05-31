@@ -1,11 +1,10 @@
-import { isNumber } from 'util'
+import { isNumber, isUndefined as isU } from 'util'
 import { parse as parseAsBytes } from 'bytes'
 import isServer from 'multiverse/is-server-side'
 import { DEFAULT_RESULT_LIMIT } from 'universe/backend'
 
 export function getEnv(silent=false) {
     const env = {
-
         NODE_ENV: process.env.NODE_ENV || process.env.BABEL_ENV || process.env.APP_ENV || 'unknown',
         MONGODB_URI: (process.env.MONGODB_URI || '').toString(),
         MAX_LIMIT: parseInt(process.env.MAX_LIMIT ?? '-Infinity'),
@@ -16,6 +15,7 @@ export function getEnv(silent=false) {
         MAX_OPTIONS_PER_ELECTION: parseInt(process.env.MAX_OPTIONS_PER_ELECTION || '-Infinity'),
         MAX_RANKINGS_PER_ELECTION: parseInt(process.env.MAX_RANKINGS_PER_ELECTION || '-Infinity'),
         MAX_CONTENT_LENGTH_BYTES: parseAsBytes(process.env.MAX_CONTENT_LENGTH_BYTES || '-Infinity'),
+        HYDRATE_DB_ON_STARTUP: !isU(process.env.HYDRATE_DB_ON_STARTUP) && process.env.HYDRATE_DB_ON_STARTUP !== 'false',
     };
 
     const _mustBeGtZero = [
@@ -40,6 +40,7 @@ export function getEnv(silent=false) {
     // env.MAX_OPTIONS_PER_ELECTION: ${env.MAX_OPTIONS_PER_ELECTION}
     // env.MAX_RANKINGS_PER_ELECTION: ${env.MAX_RANKINGS_PER_ELECTION}
     // env.MAX_CONTENT_LENGTH_BYTES: ${env.MAX_CONTENT_LENGTH_BYTES}
+    // env.HYDRATE_DB_ON_STARTUP: ${env.HYDRATE_DB_ON_STARTUP}
     // ---`);
         /* eslint-enable no-console */
     }

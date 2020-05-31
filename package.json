@@ -16,7 +16,8 @@
     "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
-    "check-types": "tsc && echo 'no problems detected!'"
+    "check-types": "tsc && echo 'no problems detected!'",
+    "reset-db": "echo 'This can be achieved with command `NODE_ENV=development HYDRATE_DB_ON_STARTUP=true npm run dev`'"
   },
   "author": "Xunnamius",
   "license": "ISC",
