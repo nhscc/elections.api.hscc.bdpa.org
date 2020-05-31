@@ -310,19 +310,21 @@ describe('api/v1/elections', () => {
             yield { title: 'my title #5', opens: Date.now() + 10**5, closes: Infinity };
             yield { title: 'my title #6', opens: Date.now() + 10**5, closes: NaN };
             yield { title: 'my title #7', opens: undefined, closes: undefined };
+            yield { title: 'my title #7', election_id: (new ObjectId()).toHexString() };
+            yield {};
         }();
 
         await testApiEndpoint({
             next: electionsEndpoint,
             test: async ({ fetch }) => {
-                const responses = await Promise.all([...Array(10)].map(_ => fetch({
+                const responses = await Promise.all([...Array(12)].map(_ => fetch({
                     method: 'POST',
                     headers: { KEY, 'Content-Type': 'application/json' },
                     body: JSON.stringify(getInvalidData.next().value)
                 }).then(r => r.status)));
 
                 expect(responses).toEqual([
-                    ...[...Array(10)].map(_ => 400)
+                    ...[...Array(12)].map(_ => 400)
                 ]);
             }
         });
