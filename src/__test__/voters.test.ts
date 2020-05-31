@@ -1,6 +1,6 @@
 import { setupJest } from 'universe/__test__/db'
 import { testApiEndpoint } from 'multiverse/test-api-endpoint'
-import * as Voters from 'universe/pages/api/v1/election/voters'
+import * as Voters from 'universe/pages/api/v1/election/[id]/voters'
 import { getEnv } from 'universe/backend/env'
 
 const { getHydratedData } = setupJest();

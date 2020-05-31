@@ -1,7 +1,9 @@
 import { setupJest } from 'universe/__test__/db'
 import { testApiEndpoint } from 'multiverse/test-api-endpoint'
-import * as Election from 'universe/pages/api/v1/election'
+import * as Election from 'universe/pages/api/v1/election/[id]'
 import { getEnv } from 'universe/backend/env'
+
+import type { PublicElection, InternalElection } from 'types/global'
 
 const { getHydratedData } = setupJest();
 
@@ -11,6 +13,41 @@ electionEndpoint.config = Election.config;
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
 
 const KEY = '5db4c4d3-294a-4086-9751-f3fce82d11e4';
+
+const containsOnlyPublicData = (o: object) => {
+    const {
+        title,
+        election_id,
+        closes,
+        created,
+        deleted,
+        description,
+        opens,
+        options,
+        owned,
+        ...rest
+    } = o as PublicElection;
+
+    return !Object.keys(rest).length;
+};
+
+const internalToPublic = (e: InternalElection[]) => {
+    return e.map(election => {
+        const { title, election_id, closes, created, deleted, description, opens, options, owner } = election;
+
+        return {
+            election_id: election_id.toHexString(),
+            title,
+            created,
+            opens,
+            closes,
+            description,
+            options,
+            deleted,
+            owned: owner == KEY
+        } as Omit<PublicElection, 'election_id'> & { election_id: string };
+    });
+};
 
 describe('api/v1/election', () => {
     it('requests without a key return 401', async () => {
@@ -53,15 +90,14 @@ describe('api/v1/election', () => {
     it('returns only public and no private/internal election data', async () => {
         await testApiEndpoint({
             next: electionEndpoint,
+            params: { id: getHydratedData().elections[22].election_id },
             test: async ({ fetch }) => {
                 const response = await fetch({ headers: { KEY } });
-                const json = await response.json();
-
-                const elections = getHydratedData().elections;
-                void elections;
+                const { success, ...election } = await response.json();
 
                 expect(response.status).toBe(200);
-                expect(json.success).toBe(true);
+                expect(success).toBe(true);
+                expect(containsOnlyPublicData(election)).toBeTrue();
             }
         });
     });
