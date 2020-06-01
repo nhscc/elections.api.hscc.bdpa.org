@@ -24,12 +24,23 @@ import {
 
 import { isKeyAuthentic, addToRequestLog, isDueForContrivedError, isRateLimited } from 'universe/backend'
 import { getEnv } from 'universe/backend/env'
+import Cors from 'cors'
 
 import type { NextApiResponse } from 'next'
 import type { NextParamsRR } from 'types/global'
 
 export type GenHanParams = NextParamsRR & { methods: string[] };
 export type AsyncHanCallback = (params: NextParamsRR) => Promise<void>;
+
+const cors = Cors({
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+});
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const runCorsMiddleware = (req: any, res: any) => {
+    return new Promise((resolve, reject) => cors(req, res, (r: any) => (r instanceof Error ? reject : resolve)(r)));
+}
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 export function sendHttpContrivedError(res: NextApiResponse, responseJson?: object) {
     sendHttpErrorResponse(res, 555, {
@@ -46,6 +57,8 @@ export const config = { api: { bodyParser: { sizeLimit: getEnv().MAX_CONTENT_LEN
  * endpoints).
  */
 export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
+    await runCorsMiddleware(req, res);
+
     if(getEnv().LOCKOUT_ALL_KEYS || typeof req.headers.key != 'string' || !(await isKeyAuthentic(req.headers.key)))
         sendHttpUnauthenticated(res);
 

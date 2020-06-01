@@ -26,8 +26,8 @@ wants a key, or needs to replace a lost or stolen key, please contact NHSCC
 staff through Slack or [open an issue on
 GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org).
 
-When you get your key, include it in your requests' header as `"Key:
-yourAPIkeyhere"` and you will be immediately authenticated into the system.
+When you get your key, include it in your requests' header as `key:
+your-api-key-here` and you will be immediately authenticated into the system.
 
 ## Rules of API access
 
@@ -196,7 +196,7 @@ at the moment. If this is a problem, please contact HSCC staff via Slack or
 - Try outputting to stdout, use `console.log`, or output to some log file when API requests are made and responses received.
 - Elections are returned in FIFO (first-election-in-is-the-first-election-out) ascending/queue order.
 - All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
-- Are you provided the correct headers? You need to specify the `key` header for all requests, and the `'content-type': 'application/json'` when making POST and PUT requests.
+- Are you provided the correct headers? You need to specify the `key: your-api-key-here` header for all requests, and the `'content-type': 'application/json'` header when making POST and PUT requests.
 
 ## Metadata endpoint [/meta]
 
@@ -208,7 +208,8 @@ This endpoint deals with summary metadata about all elections in the system (del
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
 + Response 200 (application/json)
 
@@ -235,7 +236,7 @@ This endpoint deals with summary metadata about all elections in the system (del
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 429 (application/json)
@@ -260,7 +261,7 @@ This endpoint deals with summary metadata about all elections in the system (del
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -282,7 +283,8 @@ This endpoint deals with all elections data currently in the system.
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
 + Response 200 (application/json)
 
@@ -350,7 +352,7 @@ This endpoint deals with all elections data currently in the system.
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 429 (application/json)
@@ -375,7 +377,7 @@ This endpoint deals with all elections data currently in the system.
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -385,12 +387,13 @@ This endpoint deals with all elections data currently in the system.
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
     + Attributes (object)
         - title: My Election (string) - Title of the election.
         + description: Election description (string) - [optional] Description of the election.
-        + options: `"Biden"`,`"Sanders"` (array[string]) - [optional] Array of options voters are allowed to select from.
+        + options (array[string]) - [optional] Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
         + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
         + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
 
@@ -437,7 +440,7 @@ This endpoint deals with all elections data currently in the system.
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 429 (application/json)
@@ -462,7 +465,7 @@ This endpoint deals with all elections data currently in the system.
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -479,7 +482,8 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
 + Response 200 (application/json)
 
@@ -509,7 +513,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 429 (application/json)
@@ -534,7 +538,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -544,12 +548,13 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
     + Attributes (object)
         + title: My Election (string) - [optional] Title of the election.
         + description: Election description (string) - [optional] Description of the election.
-        + options: `"Biden"`,`"Sanders"` (array[string]) - [optional] Array of options voters are allowed to select from.
+        + options (array[string]) - [optional] Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
         + opens: 1589346000600 (number) - [optional] When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
         + closes: 1589346900600 (number) - [optional] When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
 
@@ -590,7 +595,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 403 (application/json)
@@ -626,7 +631,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -636,7 +641,8 @@ This endpoint returns an expanded data object describing the election specified 
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
 + Response 200 (application/json)
 
@@ -657,7 +663,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 403 (application/json)
@@ -693,7 +699,7 @@ This endpoint returns an expanded data object describing the election specified 
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -710,7 +716,8 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
 + Response 200 (application/json)
 
@@ -738,7 +745,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 429 (application/json)
@@ -763,7 +770,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -773,7 +780,8 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
     + Headers
 
-            Key: your-special-api-key-here
+            key: your-special-api-key-here
+            content-type: application/json
 
     + Body
 
@@ -815,7 +823,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
     + Body
 
             {
-                "error": "missing authentication key"
+                "error": "invalid API key encountered"
             }
 
 + Response 403 (application/json)
@@ -851,7 +859,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
     + Body
 
             {
-                "error": "guru meditation",
+                "error": "(do not report this)",
                 "contrived": true
             }
 
@@ -862,7 +870,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 + election_id: `5ec8adf06e38137ff2e58769` (string) - unique MongoDB id representing the election. Generated automatically by the server.
 + title: My Election (string) - Title of the election.
 + description: Election description (string) - Description of the election.
-+ options: `"Biden"`,`"Sanders"` (array[string]) - Array of options voters are allowed to select from.
++ options (array[string]) - Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
 + created: 1589345900650  (number) - When this election was created [unix epoch seconds]. Generated automatically by the server.
 + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
 + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
