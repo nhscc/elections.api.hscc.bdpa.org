@@ -275,7 +275,7 @@ describe('api/v1/elections', () => {
             test: async ({ fetch }) => {
                 const response = await fetch({
                     method: 'POST',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify({
                         title: 'My Election',
                         description: '',
@@ -319,7 +319,7 @@ describe('api/v1/elections', () => {
             test: async ({ fetch }) => {
                 const responses = await Promise.all([...Array(12)].map(_ => fetch({
                     method: 'POST',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify(getInvalidData.next().value)
                 }).then(r => r.status)));
 

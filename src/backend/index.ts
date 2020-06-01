@@ -33,6 +33,8 @@ import type {
 import type { NextApiRequest } from 'next'
 import type { WithId, AggregationCursor } from 'mongodb'
 
+type PartialInternalElection = Partial<InternalElection> & { election_id: ObjectId };
+
 let requestCounter = 0;
 
 export const DEFAULT_RESULT_LIMIT = 15;
@@ -160,7 +162,59 @@ export async function doesElectionExist(electionId: ObjectId): Promise<boolean> 
     return !!await (await getDb()).collection<InDbElection>('elections').find({ _id: electionId }).limit(1).count();
 }
 
-type PartialInternalElection = Partial<InternalElection> & { election_id: ObjectId };
+export async function getRankings(electionId: ObjectId): Promise<VoterRanking[]> {
+    if(electionId && !(electionId instanceof ObjectId))
+        throw new IdTypeError(electionId);
+
+    const rankings = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').find<ElectionRankings>({
+        election_id: electionId
+    }).next();
+
+    if(!rankings)
+        throw new NotFoundError(electionId);
+
+    return rankings.rankings;
+}
+
+export async function replaceRankings({ electionId, rankings }: EleVotRanParams): Promise<void> {
+    if(electionId && !(electionId instanceof ObjectId))
+        throw new IdTypeError(electionId);
+
+    if(!isArray(rankings))
+        throw new ValidationError('invalid voter rankings encountered');
+
+    const maxRanks = getEnv().MAX_RANKINGS_PER_ELECTION;
+
+    if(rankings.length > maxRanks)
+        throw new ValidationError(`too many rankings (max is ${maxRanks}`);
+
+    const electionOpts = (await getInternalElection(electionId)).options;
+    const ids = new Set<string>();
+
+    rankings.forEach(voterRanking => {
+        if(typeof voterRanking?.voter_id != 'string' || !voterRanking.voter_id)
+            throw new ValidationError('invalid rankings property "voter_id"');
+
+        if(ids.has(voterRanking.voter_id))
+            throw new ValidationError('illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"');
+
+        ids.add(voterRanking.voter_id);
+
+        if(!isArray(voterRanking.ranking) ||
+          voterRanking.ranking.some(r => typeof r != 'string' || !electionOpts.includes(r)) ||
+          voterRanking.ranking.length > electionOpts.length)
+            throw new ValidationError('invalid rankings property "ranking"');
+    });
+
+    const result = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').updateOne(
+        { election_id: electionId },
+        { $set: { rankings }},
+        { upsert: true }
+    );
+
+    if(!result.upsertedCount && !result.matchedCount)
+        throw new GuruMeditationError();
+}
 
 // TODO: document that either 1) NewElection or 2) PatchElection, electionId,
 // TODO: key are the two required sets of parameters (overloaded)
@@ -277,6 +331,13 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
 
     newData.election_id = result.upsertedCount ? result.upsertedId._id : electionId;
 
+    if(!electionId) {
+        await (await getDb()).collection<ElectionRankings>('rankings').insertOne({
+            election_id: newData.election_id,
+            rankings: []
+        });
+    }
+
     return newData as PartialInternalElection;
 }
 
@@ -295,60 +356,6 @@ export async function deleteElection(electionId: ObjectId): Promise<void> {
         { _id: electionId },
         { $set: { deleted: true }}
     );
-}
-
-export async function getRankings(electionId: ObjectId): Promise<VoterRanking[]> {
-    if(electionId && !(electionId instanceof ObjectId))
-        throw new IdTypeError(electionId);
-
-    const rankings = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').find<ElectionRankings>({
-        election_id: electionId
-    }).next();
-
-    if(!rankings)
-        throw new NotFoundError(electionId);
-
-    return rankings.rankings;
-}
-
-export async function replaceRankings({ electionId, rankings }: EleVotRanParams): Promise<void> {
-    if(electionId && !(electionId instanceof ObjectId))
-        throw new IdTypeError(electionId);
-
-    if(!isArray(rankings))
-        throw new ValidationError('invalid voter rankings encountered');
-
-    const maxRanks = getEnv().MAX_RANKINGS_PER_ELECTION;
-
-    if(rankings.length > maxRanks)
-        throw new ValidationError(`too many rankings (max is ${maxRanks}`);
-
-    const electionOpts = (await getInternalElection(electionId)).options;
-    const ids = new Set<string>();
-
-    rankings.forEach(voterRanking => {
-        if(typeof voterRanking.voter_id != 'string' || !voterRanking.voter_id)
-            throw new ValidationError('invalid rankings property "voter_id"');
-
-        if(ids.has(voterRanking.voter_id))
-            throw new ValidationError('illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"');
-
-        ids.add(voterRanking.voter_id);
-
-        if(!isArray(voterRanking.ranking) ||
-          voterRanking.ranking.some(r => typeof r != 'string' || !electionOpts.includes(r)) ||
-          voterRanking.ranking.length > electionOpts.length)
-            throw new ValidationError('invalid rankings property "ranking"');
-    });
-
-    const result = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').updateOne(
-        { election_id: electionId },
-        { $set: { rankings }},
-        { upsert: true }
-    );
-
-    if(!result.upsertedCount && !result.matchedCount)
-        throw new GuruMeditationError();
 }
 
 // TODO: document that it's okay not to await this function, it's fire and

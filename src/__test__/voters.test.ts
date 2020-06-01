@@ -2,8 +2,8 @@ import { setupJest } from 'universe/__test__/db'
 import { testApiEndpoint } from 'multiverse/test-api-endpoint'
 import * as Voters from 'universe/pages/api/v1/election/[id]/voters'
 import { getEnv } from 'universe/backend/env'
-import { getRankings, upsertElection } from 'universe/backend';
-import { ObjectId } from 'mongodb';
+import { getRankings, upsertElection } from 'universe/backend'
+import { ObjectId } from 'mongodb'
 
 const { getHydratedData } = setupJest();
 
@@ -60,7 +60,7 @@ describe('api/v1/election/voters', () => {
 
         await testApiEndpoint({
             next: votersEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const response = await fetch({ headers: { KEY } });
                 const { success, votes, ...rest } = await response.json();
@@ -78,18 +78,36 @@ describe('api/v1/election/voters', () => {
 
         await testApiEndpoint({
             next: votersEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const mutation = [{ voter_id: 'X', ranking: ['Walking Dead'] }];
 
                 const response = await fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify(mutation)
                 });
 
                 expect(response.status).toBe(200);
                 expect(await getRankings(election_id)).toEqual(mutation);
+            }
+        });
+    });
+
+    it('rejects PUTs that are not the correct content type', async () => {
+        const election_id = getHydratedData().elections[52].election_id;
+
+        await testApiEndpoint({
+            next: votersEndpoint,
+            params: { id: election_id.toHexString() },
+            test: async ({ fetch }) => {
+                const response = await fetch({
+                    method: 'PUT',
+                    headers: { KEY },
+                    body: JSON.stringify([])
+                });
+
+                expect(response.status).toBe(400);
             }
         });
     });
@@ -106,7 +124,7 @@ describe('api/v1/election/voters', () => {
 
         await testApiEndpoint({
             next: votersEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const response = await fetch({ headers: { KEY } });
                 const { success, votes } = await response.json();
@@ -138,11 +156,11 @@ describe('api/v1/election/voters', () => {
 
         await testApiEndpoint({
             next: votersEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const responses = await Promise.all([...Array(12)].map(_ => fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify(getInvalidData.next().value)
                 }).then(r => r.status)));
 
@@ -158,11 +176,11 @@ describe('api/v1/election/voters', () => {
 
         await testApiEndpoint({
             next: votersEndpoint,
-            params: { id: election_id },
+            params: { id: election_id.toHexString() },
             test: async ({ fetch }) => {
                 const response = await fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify([])
                 });
 
@@ -182,7 +200,7 @@ describe('api/v1/election/voters', () => {
                     fetch({ method: 'GET', headers: { KEY }}),
                     fetch({
                         method: 'PUT',
-                        headers: { KEY, 'Content-Type': 'application/json' },
+                        headers: { KEY, 'content-type': 'application/json' },
                         body: JSON.stringify([])
                     }),
                 ].map(p => p.then(r => r.status)));

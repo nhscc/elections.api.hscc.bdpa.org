@@ -2,10 +2,10 @@ import { setupJest } from 'universe/__test__/db'
 import { testApiEndpoint } from 'multiverse/test-api-endpoint'
 import * as Election from 'universe/pages/api/v1/election/[id]'
 import { getEnv } from 'universe/backend/env'
-
-import type { PublicElection, InternalElection } from 'types/global'
-import { getInternalElection, getPublicElection, doesElectionExist } from 'universe/backend'
+import { getPublicElection, doesElectionExist } from 'universe/backend'
 import { ObjectId } from 'mongodb'
+
+import type { PublicElection } from 'types/global'
 
 const { getHydratedData } = setupJest();
 
@@ -31,24 +31,6 @@ const containsOnlyPublicData = (o: object) => {
     } = o as PublicElection;
 
     return !Object.keys(rest).length;
-};
-
-const internalToPublic = (e: InternalElection[]) => {
-    return e.map(election => {
-        const { title, election_id, closes, created, deleted, description, opens, options, owner } = election;
-
-        return {
-            election_id: election_id.toHexString(),
-            title,
-            created,
-            opens,
-            closes,
-            description,
-            options,
-            deleted,
-            owned: owner == KEY
-        } as Omit<PublicElection, 'election_id'> & { election_id: string };
-    });
 };
 
 describe('api/v1/election', () => {
@@ -121,7 +103,7 @@ describe('api/v1/election', () => {
 
                 const response = await fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify(mutation)
                 });
 
@@ -130,6 +112,24 @@ describe('api/v1/election', () => {
                 expect(await getPublicElection({
                     electionId: election_id, key: KEY
                 })).toContainEntries(Object.entries(mutation));
+            }
+        });
+    });
+
+    it('rejects PUTs that are not the correct content type', async () => {
+        const election_id = getHydratedData().elections[52].election_id;
+
+        await testApiEndpoint({
+            next: electionEndpoint,
+            params: { id: election_id.toHexString() },
+            test: async ({ fetch }) => {
+                const response = await fetch({
+                    method: 'PUT',
+                    headers: { KEY },
+                    body: JSON.stringify({ title: 'Good', opens: Date.now() + 1000, closes: Date.now() + 10000 })
+                });
+
+                expect(response.status).toBe(400);
             }
         });
     });
@@ -173,7 +173,7 @@ describe('api/v1/election', () => {
             test: async ({ fetch }) => {
                 const responses = await Promise.all([...Array(10)].map(_ => fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify(getInvalidData.next().value)
                 }).then(r => r.status)));
 
@@ -200,7 +200,7 @@ describe('api/v1/election', () => {
 
                 response = await fetch({
                     method: 'PUT',
-                    headers: { KEY, 'Content-Type': 'application/json' },
+                    headers: { KEY, 'content-type': 'application/json' },
                     body: JSON.stringify({ title: 'UPDATED TITLE SUPER COOL' })
                 });
 
@@ -221,7 +221,7 @@ describe('api/v1/election', () => {
                     fetch({ method: 'DELETE', headers: { KEY }}),
                     fetch({
                         method: 'PUT',
-                        headers: { KEY, 'Content-Type': 'application/json' },
+                        headers: { KEY, 'content-type': 'application/json' },
                         body: JSON.stringify({ title: 'UPDATED TITLE SUPER COOL' })
                     }),
                 ].map(p => p.then(r => r.status)));

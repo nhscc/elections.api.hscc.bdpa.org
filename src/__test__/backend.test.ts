@@ -1046,6 +1046,17 @@ describe('universe/backend', () => {
             })).toReject();
             /* eslint-enable @typescript-eslint/ban-ts-ignore */
         });
+
+        it('can fetch the empty array inserted when a brand new election is created', async () => {
+            const newElection: NewElection = {
+                title: 'New election',
+                opens: Date.now() + 10**6,
+                closes: Date.now() + 10**7,
+            };
+
+            const { election_id } = await Backend.upsertElection({ election: newElection, key: Backend.NULL_KEY });
+            expect(await Backend.getRankings(election_id)).toEqual([]);
+        })
     });
 
     describe('::addToRequestLog', () => {

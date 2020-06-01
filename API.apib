@@ -196,6 +196,7 @@ at the moment. If this is a problem, please contact HSCC staff via Slack or
 - Try outputting to stdout, use `console.log`, or output to some log file when API requests are made and responses received.
 - Elections are returned in FIFO (first-election-in-is-the-first-election-out) ascending/queue order.
 - All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
+- Are you provided the correct headers? You need to specify the `key` header for all requests, and the `'content-type': 'application/json'` when making POST and PUT requests.
 
 ## Metadata endpoint [/meta]
 
