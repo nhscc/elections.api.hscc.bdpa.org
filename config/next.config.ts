@@ -55,7 +55,7 @@ module.exports = (): object => {
             async rewrites() {
                 return [
                     {
-                        source: '/api/?',
+                        source: '/api/',
                         destination: '/404',
                     },
                     {
