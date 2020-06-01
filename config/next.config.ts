@@ -55,22 +55,6 @@ module.exports = (): object => {
             async rewrites() {
                 return [
                     {
-                        source: '/api/',
-                        destination: '/404',
-                    },
-                    {
-                        source: '/api/v1/?',
-                        destination: '/404',
-                    },
-                    {
-                        source: '/api/v1/election/?',
-                        destination: '/404',
-                    },
-                    {
-                        source: '/api/v2/?',
-                        destination: '/404',
-                    },
-                    {
                         source: '/v1/meta',
                         destination: '/api/v1/meta'
                     },
