@@ -26,22 +26,22 @@ export function getEnv(silent=false) {
         env.MAX_CONTENT_LENGTH_BYTES
     ];
 
-    if(!silent && !isServer() && env.NODE_ENV == 'development') {
+    if(!silent /* && env.NODE_ENV == 'development' */) {
         /* eslint-disable no-console */
         console.warn('--- !APP INITIALIZED IN DEVELOPMENT MODE! ---');
-    //     console.info(`---
-    // NODE_ENV: ${NODE_ENV}
-    // env.MONGODB_URI: ${env.MONGODB_URI}
-    // env.MAX_LIMIT: ${env.MAX_LIMIT}
-    // env.IGNORE_RATE_LIMITS: ${env.IGNORE_RATE_LIMITS}
-    // env.LOCKOUT_ALL_KEYS: ${env.LOCKOUT_ALL_KEYS}
-    // env.DISALLOWED_METHODS: ${env.DISALLOWED_METHODS}
-    // env.REQUESTS_PER_CONTRIVED_ERROR: ${env.REQUESTS_PER_CONTRIVED_ERROR}
-    // env.MAX_OPTIONS_PER_ELECTION: ${env.MAX_OPTIONS_PER_ELECTION}
-    // env.MAX_RANKINGS_PER_ELECTION: ${env.MAX_RANKINGS_PER_ELECTION}
-    // env.MAX_CONTENT_LENGTH_BYTES: ${env.MAX_CONTENT_LENGTH_BYTES}
-    // env.HYDRATE_DB_ON_STARTUP: ${env.HYDRATE_DB_ON_STARTUP}
-    // ---`);
+        console.info(`---
+            NODE_ENV: ${env.NODE_ENV}
+            env.MONGODB_URI: ${env.MONGODB_URI}
+            env.MAX_LIMIT: ${env.MAX_LIMIT}
+            env.IGNORE_RATE_LIMITS: ${env.IGNORE_RATE_LIMITS}
+            env.LOCKOUT_ALL_KEYS: ${env.LOCKOUT_ALL_KEYS}
+            env.DISALLOWED_METHODS: ${env.DISALLOWED_METHODS}
+            env.REQUESTS_PER_CONTRIVED_ERROR: ${env.REQUESTS_PER_CONTRIVED_ERROR}
+            env.MAX_OPTIONS_PER_ELECTION: ${env.MAX_OPTIONS_PER_ELECTION}
+            env.MAX_RANKINGS_PER_ELECTION: ${env.MAX_RANKINGS_PER_ELECTION}
+            env.MAX_CONTENT_LENGTH_BYTES: ${env.MAX_CONTENT_LENGTH_BYTES}
+            env.HYDRATE_DB_ON_STARTUP: ${env.HYDRATE_DB_ON_STARTUP}
+     ---`);
         /* eslint-enable no-console */
     }
 

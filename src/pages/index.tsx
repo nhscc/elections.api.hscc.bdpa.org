@@ -8,6 +8,7 @@ type Props = {
     shouldHydrateDb: boolean;
     isInProduction: boolean;
     nodeEnv: string;
+    c: string;
 };
 
 let previouslyHydratedDb = false;
@@ -20,7 +21,8 @@ export async function getServerSideProps() {
         isInProduction: env.NODE_ENV == 'production',
         shouldHydrateDb,
         previouslyHydratedDb,
-        nodeEnv: env.NODE_ENV
+        nodeEnv: env.NODE_ENV,
+        c: env.MONGODB_URI
     };
 
     if(shouldHydrateDb) {
@@ -35,7 +37,8 @@ export async function getServerSideProps() {
     return { props };
 }
 
-export default function Index({ previouslyHydratedDb, shouldHydrateDb, isInProduction, nodeEnv }: Props): JSX.Element {
+export default function Index({ previouslyHydratedDb, shouldHydrateDb, isInProduction, nodeEnv, c }: Props): JSX.Element {
+    console.info('C: ', c);
     let status = (<span style={{ color: 'gray' }}>unchanged</span>);
 
     if(previouslyHydratedDb)
