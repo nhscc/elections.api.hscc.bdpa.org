@@ -13,9 +13,6 @@ export default async function(req: NextApiRequest, res: NextApiResponse) {
         const key = req.headers.key?.toString() || '';
         let electionId: ObjectId | false;
 
-        sendHttpOk(res, { response: JSON.stringify(req.query) });
-
-        if(Date.now() > Infinity) {
         try { electionId = req.query.id ? new ObjectId(req.query.id.toString()) : false }
         catch(e) { throw new NotFoundError(req.query.id.toString()) }
 
@@ -36,7 +33,6 @@ export default async function(req: NextApiRequest, res: NextApiResponse) {
         else if(req.method == 'DELETE') {
             await deleteElection(electionId);
             sendHttpOk(res);
-        }
         }
     }, { req, res, methods: [ 'GET', 'PUT', 'DELETE' ] });
 }
