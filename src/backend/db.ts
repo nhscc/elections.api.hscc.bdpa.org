@@ -17,7 +17,10 @@ export async function getDb(): Promise<Db> {
  */
 export function setDb(newDB: Db): void { db = newDB; }
 
-// TODO: document
+/**
+ * Destroys all collections in the database. Can be called multiple times
+ * safely.
+ */
 export async function destroyDb(db: Db) {
     await Promise.allSettled([
         db.dropCollection('keys'),
@@ -28,13 +31,12 @@ export async function destroyDb(db: Db) {
     ]);
 }
 
-// TODO: document that this function is idempotent and can be called on
-// TODO: conformant databases that already have the appropriate structure
-// TODO: without worry of data loss
+/**
+ * This function is idempotent and can be called without worry of data loss.
+ */
 export async function initializeDb(db: Db): Promise<void> {
-    // TODO: add validation rules during createCollection phase
-    // TODO: (including special 0 root key not accepted in keys or in API)
-    // TODO: also make an index over key in keys (if not exists)
+    // TODO: Add validation rules during createCollection phase
+    // TODO: Make an index over key in keys (if not exists)
 
     await Promise.all([
         db.createCollection('keys'),

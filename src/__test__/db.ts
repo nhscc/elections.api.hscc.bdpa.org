@@ -148,7 +148,6 @@ export const unhydratedDummyDbData: DummyDbData = {
     ].flat()
 };
 
-// TODO: not idempotent; elections will be duplicated if called twice
 export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData> {
     const newData = { ...data };
 

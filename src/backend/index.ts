@@ -222,8 +222,6 @@ export async function replaceRankings({ electionId, rankings }: EleVotRanParams)
         throw new GuruMeditationError();
 }
 
-// TODO: document that either 1) NewElection or 2) PatchElection, electionId,
-// TODO: key are the two required sets of parameters (overloaded)
 export async function upsertElection(opts: UpsNewEleParams): Promise<PartialInternalElection>
 export async function upsertElection(opts: UpsPatEleParams): Promise<PartialInternalElection>
 export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): Promise<PartialInternalElection> {
@@ -372,8 +370,10 @@ export async function deleteElection(electionId: ObjectId): Promise<void> {
     );
 }
 
-// TODO: document that it's okay not to await this function, it's fire and
-// TODO: forget
+/**
+ * Note that this async function does not have to be awaited. It's fire and
+ * forget!
+ */
 export async function addToRequestLog({ req, res }: NextParamsRR): Promise<void> {
     const logEntry: RequestLogEntry = {
         ip: getClientIp(req),

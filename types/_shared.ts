@@ -3,19 +3,6 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next'
 
-
-// TODO: jsdoc comment/document all of this stuff like the below:
-/**
- * @desc Type representing
- * [`Primitive`](https://developer.mozilla.org/en-US/docs/Glossary/Primitive)
- * types.
- *
- * @example
- *   type Various = number | string | object;
- *
- *   /// Expect: object
- *   type Cleaned = Exclude<Various, Primitive>
- */
 export type Primitive =
   | string
   | number
@@ -25,14 +12,6 @@ export type Primitive =
   | null
   | undefined;
 
-/**
- * @desc Type representing falsy values.
- * @example
- *   type Various = 'a' | 'b' | undefined | false;
- *
- *   /// Expect: "a" | "b"
- *   Exclude<Various, Falsy>;
- */
 export type Falsy = false | '' | 0 | null | undefined;
 
 export type SuccessJsonResponse = { success: true };

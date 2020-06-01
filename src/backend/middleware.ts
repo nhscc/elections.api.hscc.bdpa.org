@@ -32,9 +32,7 @@ import type { NextParamsRR } from 'types/global'
 export type GenHanParams = NextParamsRR & { methods: string[] };
 export type AsyncHanCallback = (params: NextParamsRR) => Promise<void>;
 
-const cors = Cors({
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-});
+const cors = Cors({ methods: ['GET', 'POST', 'PUT', 'DELETE'] });
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const runCorsMiddleware = (req: any, res: any) => {

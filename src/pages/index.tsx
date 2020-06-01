@@ -35,7 +35,7 @@ export async function getServerSideProps() {
     return { props };
 }
 
-export default function Index({ previouslyHydratedDb, shouldHydrateDb, isInProduction, nodeEnv }: Props): JSX.Element {
+export default function Index({ previouslyHydratedDb, shouldHydrateDb, isInProduction, nodeEnv }: Props) {
     let status = (<span style={{ color: 'gray' }}>unchanged</span>);
 
     if(previouslyHydratedDb)
