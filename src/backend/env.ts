@@ -3,7 +3,7 @@ import { parse as parseAsBytes } from 'bytes'
 import isServer from 'multiverse/is-server-side'
 import { DEFAULT_RESULT_LIMIT } from 'universe/backend'
 
-export function getEnv(silent=false) {
+export function getEnv(loud=false) {
     const env = {
         NODE_ENV: process.env.NODE_ENV || process.env.BABEL_ENV || process.env.APP_ENV || 'unknown',
         MONGODB_URI: (process.env.MONGODB_URI || '').toString(),
@@ -26,23 +26,9 @@ export function getEnv(silent=false) {
         env.MAX_CONTENT_LENGTH_BYTES
     ];
 
-    if(!silent /* && env.NODE_ENV == 'development' */) {
-        /* eslint-disable no-console */
-        console.warn('--- !APP INITIALIZED IN DEVELOPMENT MODE! ---');
-        console.info(`---
-            NODE_ENV: ${env.NODE_ENV}
-            env.MONGODB_URI: ${env.MONGODB_URI}
-            env.MAX_LIMIT: ${env.MAX_LIMIT}
-            env.IGNORE_RATE_LIMITS: ${env.IGNORE_RATE_LIMITS}
-            env.LOCKOUT_ALL_KEYS: ${env.LOCKOUT_ALL_KEYS}
-            env.DISALLOWED_METHODS: ${env.DISALLOWED_METHODS}
-            env.REQUESTS_PER_CONTRIVED_ERROR: ${env.REQUESTS_PER_CONTRIVED_ERROR}
-            env.MAX_OPTIONS_PER_ELECTION: ${env.MAX_OPTIONS_PER_ELECTION}
-            env.MAX_RANKINGS_PER_ELECTION: ${env.MAX_RANKINGS_PER_ELECTION}
-            env.MAX_CONTENT_LENGTH_BYTES: ${env.MAX_CONTENT_LENGTH_BYTES}
-            env.HYDRATE_DB_ON_STARTUP: ${env.HYDRATE_DB_ON_STARTUP}
-     ---`);
-        /* eslint-enable no-console */
+    if(loud && env.NODE_ENV == 'development') {
+        /* eslint-disable-next-line no-console */
+        console.info(env);
     }
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
@@ -53,7 +39,7 @@ export function getEnv(silent=false) {
     }
 
     if(env.MAX_LIMIT < DEFAULT_RESULT_LIMIT)
-        throw new Error('MAX_LIMIT must be >= DEFAULT_RESULT_LIMIT (got ${env.MAX_LIMIT} < ${DEFAULT_RESULT_LIMIT} instead)');
+        throw new Error('MAX_LIMIT must be >= DEFAULT_RESULT_LIMIT (got ${env.MAX_LIMIT} < ${DEFAULT_RESULT_LIMIT})');
 
     return env;
 }
