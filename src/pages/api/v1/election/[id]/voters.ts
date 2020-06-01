@@ -9,7 +9,7 @@ import type { NextApiResponse, NextApiRequest } from 'next'
 export { config } from 'universe/backend/middleware';
 
 export default async function(req: NextApiRequest, res: NextApiResponse) {
-    await handleEndpoint(async ({ res }) => {
+    await handleEndpoint(async ({ req, res }) => {
         const key = req.headers.key?.toString() || '';
         let electionId: ObjectId | false;
 
