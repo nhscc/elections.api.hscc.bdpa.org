@@ -122,7 +122,7 @@ For example, given the following dataset and a default limit of 3 (max 10):
 
 Paginated results:
 
-`limit=0`: 0 items returned  
+`limit=0`: an array with 0 items is returned  
 `limit=1`: an array with only the first item is returned  
 `limit=5`: an array of 5 items is returned (the whole dataset!)  
 `limit=10`: since there are only 5 items total, same as the previous result  
@@ -210,6 +210,7 @@ This endpoint deals with summary metadata about all elections in the system (del
             content-type: application/json
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -225,10 +226,6 @@ This endpoint deals with summary metadata about all elections in the system (del
                 "openElections": 20,
                 "closedElections": 423
             }
-
-+ Response 401 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ## Elections endpoint [/elections{?limit,after}]
 
@@ -251,6 +248,7 @@ This endpoint deals with all elections data currently in the system.
             content-type: application/json
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -297,11 +295,6 @@ This endpoint deals with all elections data currently in the system.
                 ]
             }
 
-+ Response 400 (application/json)
-+ Response 401 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
-
 ### Create a new election [POST]
 
 + Request
@@ -324,6 +317,7 @@ This endpoint deals with all elections data currently in the system.
             }
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -335,11 +329,6 @@ This endpoint deals with all elections data currently in the system.
                 "success": true,
                 "election_id": "5ec8adf06e38137ff2e5876c"
             }
-
-+ Response 400 (application/json)
-+ Response 401 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ## Election endpoint [/election/{election_id}]
 
@@ -358,6 +347,7 @@ This endpoint returns an expanded data object describing the election specified 
             content-type: application/json
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (Election)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -376,11 +366,6 @@ This endpoint returns an expanded data object describing the election specified 
                 "owned": false,
                 "deleted": true
             }
-
-+ Response 401 (application/json)
-+ Response 404 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ### Merge data into an existing election [PUT]
 
@@ -401,6 +386,7 @@ This endpoint returns an expanded data object describing the election specified 
             }
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -412,13 +398,6 @@ This endpoint returns an expanded data object describing the election specified 
                 // ...the keys and values that were successfully merged are returned
             }
 
-+ Response 400 (application/json)
-+ Response 401 (application/json)
-+ Response 403 (application/json)
-+ Response 404 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
-
 ### Delete an election [DELETE]
 
 + Request
@@ -429,6 +408,7 @@ This endpoint returns an expanded data object describing the election specified 
             content-type: application/json
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -438,12 +418,6 @@ This endpoint returns an expanded data object describing the election specified 
             {
                 "success": true
             }
-
-+ Response 401 (application/json)
-+ Response 403 (application/json)
-+ Response 404 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ## Voters endpoint [/election/{election_id}/voters]
 
@@ -462,6 +436,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             content-type: application/json
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -478,11 +453,6 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
                     {"voter_id":"4","ranking":["Warren", "Biden", "Sanders"]}
                 ]
             }
-
-+ Response 401 (application/json)
-+ Response 404 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ### Replace an election's mapping of voters to rankings [PUT]
 
@@ -504,6 +474,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             ]
 
 + Response 200 (application/json)
+See an example
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
@@ -513,13 +484,6 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             {
                 "success": true
             }
-
-+ Response 400 (application/json)
-+ Response 401 (application/json)
-+ Response 403 (application/json)
-+ Response 404 (application/json)
-+ Response 429 (application/json)
-+ Response 555 (application/json)
 
 ## Data Structures
 
