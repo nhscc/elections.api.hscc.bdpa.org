@@ -10,7 +10,7 @@ export class UpsertFailedError extends AppError {
 
 export class NotFoundError<T=string> extends AppError {
     constructor(reference?: T) {
-        super(reference ? `item ${reference} does not exist or was not found` : 'item or resource was not found');
+        super(reference ? `item "${reference}" does not exist or was not found` : 'item or resource was not found');
     }
 }
 
@@ -34,7 +34,7 @@ export class ApiKeyTypeError extends AppError {
 
 export class LimitTypeError extends AppError {
     constructor(limit?: number) {
-        super(limit ? `\`limit\` must be a number, got ${limit} instead` : 'invalid `limit` encountered');
+        super(limit ? `invalid \`limit\` "${limit}" encountered` : 'invalid `limit` encountered');
     }
 }
 

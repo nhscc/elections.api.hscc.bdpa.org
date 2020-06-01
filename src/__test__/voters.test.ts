@@ -150,8 +150,8 @@ describe('api/v1/election/voters', () => {
             yield [[]];
             yield [undefined];
             yield [{ vote: 1, rank: []}];
-            yield [{ voter_id: 1, rankings: []}];
-            yield [{ voter_id: '1', rankings: ['FAKER']}];
+            yield [{ voter_id: 1, ranking: []}];
+            yield [{ voter_id: '1', ranking: ['FAKER']}];
         }();
 
         await testApiEndpoint({

@@ -265,7 +265,7 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
         closes && (newData.closes = closes);
         description && (newData.description = description);
         options && (newData.options = options);
-        deleted && (newData.deleted = deleted);
+        !isUndefined(deleted) && (newData.deleted = false);
     }
 
     else {
