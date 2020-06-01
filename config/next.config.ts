@@ -47,6 +47,47 @@ module.exports = (): object => {
             MAX_OPTIONS_PER_ELECTION: process.env.MAX_OPTIONS_PER_ELECTION,
             MAX_RANKINGS_PER_ELECTION: process.env.MAX_RANKINGS_PER_ELECTION,
             MAX_CONTENT_LENGTH_BYTES: process.env.MAX_CONTENT_LENGTH_BYTES,
+        },
+
+        // TODO: move these out of experimental when they're not experimental
+        // TODO: anymore!
+        experimental: {
+            async rewrites() {
+                return [
+                    {
+                        source: '/api',
+                        destination: '/404',
+                    },
+                    {
+                        source: '/api/v1',
+                        destination: '/404',
+                    },
+                    {
+                        source: '/api/v1/election',
+                        destination: '/404',
+                    },
+                    {
+                        source: '/api/v2',
+                        destination: '/404',
+                    },
+                    {
+                        source: '/v1/meta',
+                        destination: '/api/v1/meta'
+                    },
+                    {
+                        source: '/v1/elections',
+                        destination: '/api/v1/elections'
+                    },
+                    {
+                        source: '/v1/election/:id',
+                        destination: '/api/v1/election/:id'
+                    },
+                    {
+                        source: '/v1/election/:id/voters',
+                        destination: '/api/v1/election/:id/voters'
+                    }
+                ];
+            }
         }
     });
 };
