@@ -193,7 +193,7 @@ export async function replaceRankings({ electionId, rankings }: EleVotRanParams)
 
     rankings.forEach(voterRanking => {
         if(typeof voterRanking?.voter_id != 'string' || !voterRanking.voter_id)
-            throw new ValidationError('invalid rankings property "voter_id"');
+            throw new ValidationError('illegal rankings property "voter_id"');
 
         if(ids.has(voterRanking.voter_id))
             throw new ValidationError(`illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"`);
@@ -201,9 +201,15 @@ export async function replaceRankings({ electionId, rankings }: EleVotRanParams)
         ids.add(voterRanking.voter_id);
 
         if(!isArray(voterRanking.ranking) ||
-          voterRanking.ranking.some(r => typeof r != 'string' || !electionOpts.includes(r)) ||
-          voterRanking.ranking.length > electionOpts.length)
-            throw new ValidationError('invalid rankings property "ranking"');
+          voterRanking.ranking.some(r => typeof r != 'string' || !electionOpts.includes(r))) {
+            throw new ValidationError('illegal rankings property "ranking"');
+        }
+
+        if(voterRanking.ranking.length > electionOpts.length)
+            throw new ValidationError('illegal rankings property "ranking": too many rankings provided');
+
+        if((new Set(voterRanking.ranking)).size != voterRanking.ranking.length)
+            throw new ValidationError('illegal rankings property "ranking": duplicated ranking encountered');
     });
 
     const result = await (await getDb()).collection<WithId<ElectionRankings>>('rankings').updateOne(
@@ -306,6 +312,9 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
       newData.opens >= newData.closes || (newData.created && newData.opens <= newData.created))) {
         throw new TimeTypeError();
     }
+
+    if(newData.options && (new Set(newData.options)).size != newData.options.length)
+        throw new ValidationError('"options" property contains duplicate items');
 
     if(Object.keys(newData).length <= 0)
         throw new UpsertFailedError('empty upserts are not allowed');

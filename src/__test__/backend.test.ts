@@ -284,6 +284,8 @@ describe('universe/backend', () => {
                 owner: 'fake-owner-id',
                 // @ts-ignore
                 fakeprop: 'bad',
+                //@ ts-ignore
+                options: ['repeated', 'repeated']
                 /* eslint-enable @typescript-eslint/ban-ts-ignore */
             };
 
@@ -292,7 +294,7 @@ describe('universe/backend', () => {
                 key: Backend.NULL_KEY
             }).then(() => true, () => false)));
 
-            expect(results).toEqual([false, false, false, false, false, false]);
+            expect(results).toEqual([...Array(Object.keys(badProps).length)].map(_ => false));
 
             const election = await Backend.upsertElection({
                 election: newElection,
@@ -388,7 +390,8 @@ describe('universe/backend', () => {
                 closes: newElection.opens,
                 _id: new Object(),
                 election_id: new Object(),
-                extra: 'bad'
+                extra: 'bad',
+                options: ['duplicated', 'duplicated', 'detacilpud']
             };
 
             const results = await Promise.all(Object.entries(badProps).map(([k, v]) => Backend.upsertElection({
@@ -396,7 +399,7 @@ describe('universe/backend', () => {
                 election: { ...newElection, [k]: v } as NewElection
             }).then(() => true, () => false)));
 
-            expect(results).toEqual([false, false, false, false, false, false]);
+            expect(results).toEqual([...Array(Object.keys(badProps).length)].map(_ => false));
 
             expect(election2.election_id).toEqual(election1.election_id);
             expect(election1.opens).toEqual(newElection.opens);
@@ -765,64 +768,78 @@ describe('universe/backend', () => {
         });
 
         it('::replaceRankings rejects on illegal options', async () => {
+            const election = getHydratedData().elections[0];
             /* eslint-disable @typescript-eslint/ban-ts-ignore */
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [1]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [1, 2]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{}]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{}, {}]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{ a: 1 }, { b: 2 }]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{ voter_id: 1 }]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{ voter_id: '1' }]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 // @ts-ignore
                 rankings: [{ voter_id: '1', ranking: [1] }]
             })).toReject();
 
             /* eslint-enable @typescript-eslint/ban-ts-ignore */
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 rankings: [{ voter_id: '1', ranking: ['1'] }]
             })).toReject();
 
             expect(Backend.replaceRankings({
-                electionId: getHydratedData().elections[0].election_id,
+                electionId: election.election_id,
                 rankings: [{ voter_id: '1', ranking: ['1', '2'] }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: [{ voter_id: '1', ranking: [election.options[0], election.options[0]] }]
+            })).toReject();
+
+            expect(Backend.replaceRankings({
+                electionId: election.election_id,
+                rankings: [
+                    { voter_id: '1', ranking: [election.options[0]] },
+                    { voter_id: '1', ranking: [election.options[0]] }
+                ]
             })).toReject();
         });
 

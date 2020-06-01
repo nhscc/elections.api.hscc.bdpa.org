@@ -327,7 +327,7 @@ This endpoint deals with all elections data currently in the system.
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + election_id: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The unique MongoDB ID of the newly created election.
+        + election_id (string) - The unique MongoDB ID of the newly created election. Example: `ac166a46-8a89-4556-8fa0-7e6919a536b5`.
 
     + Body
 
@@ -526,14 +526,14 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 ### Vote (object)
 
 + `voter_id` (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be. Example: `"myemail@me.com"`. Can be empty. **There cannot be two objects with the same `voter_id` in the same array of votes.**
-+ ranking (array) - Whichever ranked choices the voter made when casting their vote. From left to right, the order of the array represents most preferred to least preferred. Example: `["Obama", "Romney"]`. Guaranteed to contain only valid options per election. Can be empty.
++ ranking (array) - Whichever ranked choices the voter made when casting their vote. From left to right, the order of the array represents most preferred to least preferred. Example: `["Obama", "Romney"]`. Guaranteed to contain only valid options per election. Can be empty. Duplicates not allowed.
 
 ### Election (object)
 
 + election_id (string) - A unique immutable MongoDB ID representing the election. Generated automatically by the server. Example: `5ec8adf06e38137ff2e58769`.
 + title (string) - Title of the election. Example: `"My Election"`.
 + description (string) - Description of the election. Example: `"An election"`. Can be empty.
-+ options (array) - Array of options voters are allowed to select from. Example: `["Biden", "Warren"]`. Can be empty.
++ options (array) - Array of options (strings) voters are allowed to select from. Example: `["Biden", "Warren"]`. Can be empty. Duplicates not allowed.
 + created (number) - When this election was created [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Generated automatically by the server. Not guaranteed to be smaller than `opens`. Example: `1579345900650`.
 + opens (number) - When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` and should be larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`.
 + closes (number) - When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`.
@@ -544,7 +544,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
 + title (string) - <span style="color: darkred">[required]</span> Title of the election. Example: `My Election`.
 + description (string) - <span style="color: gray">[optional]</span> Description of the election. Example: `Election`. Can be empty.
-+ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty.
++ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty. Duplicates not allowed.
 + opens (number) - <span style="color: darkred">[required]</span> When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` but larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`.
 + closes (number) - <span style="color: darkred">[required]</span> When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`.
 
@@ -552,7 +552,7 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 
 + title (string) - <span style="color: gray">[optional]</span> Title of the election. Example: `My Election`.
 + description (string) - <span style="color: gray">[optional]</span> Description of the election. Example: `Election`. Can be empty.
-+ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty. **Specifying this property will clear any votes associated with this election**.
++ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty. Duplicates not allowed. **Specifying this property will clear any votes associated with this election**.
 + opens (number) - <span style="color: gray">[optional]</span> When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` but larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`. **When specifying this property, you must also specify the `closes` property.**
 + closes (number) - <span style="color: gray">[optional]</span> When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`. **When specifying this property, you must also specify the `opens` property.**
 + deleted (boolean) - <span style="color: gray">[optional]</span> If this election has been marked as deleted. Only accepts `false`. Use the [proper endpoint](https://electionshscc.docs.apiary.io/#/reference/0/election-endpoint/delete-an-election) to set this to `true`. Example: `false`.
