@@ -27,7 +27,7 @@ staff through Slack or [open an issue on
 GitHub](https://github.com/nhscc/elections.api.hscc.bdpa.org).
 
 When you get your key, include it in your requests' header as `key:
-your-api-key-here` and you will be immediately authenticated into the system.
+your-special-api-key-here` and you will be immediately authenticated into the system.
 
 ## Rules of API access
 
@@ -194,7 +194,7 @@ The API has full support for Cross Origin Resource Sharing (CORS) for AJAX reque
 - Try outputting to stdout, use `console.log`, or output to some log file when API requests are made and responses received.
 - Elections are returned in FIFO (first-election-in-is-the-first-election-out) ascending/queue order.
 - All time data is represented as the number of milliseconds elapsed since January 1, 1970 00:00:00 UTC.
-- Are you provided the correct headers? You need to specify the `key: your-api-key-here` header for all requests, and the `'content-type': 'application/json'` header when making POST and PUT requests.
+- Are you sending the correct headers? You need to specify the `key: your-special-api-key-here` header for all requests and the `'content-type': 'application/json'` header when making POST and PUT requests.
 
 ## Metadata endpoint [/meta]
 
@@ -227,41 +227,8 @@ This endpoint deals with summary metadata about all elections in the system (del
             }
 
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ## Elections endpoint [/elections{?limit,after}]
 
@@ -272,10 +239,9 @@ This endpoint deals with all elections data currently in the system.
 ### List all elections in the system [GET]
 
 + Parameters
-    + limit (optional, number) - [optional] Maximum number of elections returned (less than or equal to 50).
+    + limit (optional, number) - <span style="color: gray">[optional]</span> Maximum number of elections returned (less than or equal to 50).
         + Default: `15`
-    + after (optional, number) - [optional] The `election_id` of the election that exists just before the first returned election in the result list, if it exists.
-        + Default: `null`
+    + after (optional, number) - <span style="color: gray">[optional]</span> The `election_id` of the election that exists just before the first returned election in the result list, if it exists.
 
 + Request
 
@@ -288,7 +254,7 @@ This endpoint deals with all elections data currently in the system.
 
     + Attributes (object)
         + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + elections (array[Election]) - An array of elections. Empty if there are no more elections in system.
+        + elections (array[Election]) - An array of election objects. Empty if there are no elections to show.
 
     + Body
 
@@ -332,52 +298,9 @@ This endpoint deals with all elections data currently in the system.
             }
 
 + Response 400 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
-            }
-
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ### Create a new election [POST]
 
@@ -388,12 +311,7 @@ This endpoint deals with all elections data currently in the system.
             key: your-special-api-key-here
             content-type: application/json
 
-    + Attributes (object)
-        - title: My Election (string) - Title of the election.
-        + description: Election description (string) - [optional] Description of the election.
-        + options (array[string]) - [optional] Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
-        + opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
-        + closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
+    + Attributes (New Election)
 
     + Body
 
@@ -401,16 +319,15 @@ This endpoint deals with all elections data currently in the system.
                 "title": "My election #4",
                 "description": "Posting a new election, look at me!",
                 "options": ["Option A", "Option B", "Option C"],
-                "created": 1589347376211,
-                "opens": 1589347379811,
-                "closes": 1589347380731,
+                "opens": 1889347379811,
+                "closes": 1989347380731
             }
 
 + Response 200 (application/json)
 
     + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + election_id: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The unique MongoDB id of the newly created election.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + election_id: `ac166a46-8a89-4556-8fa0-7e6919a536b5` (string) - The unique MongoDB ID of the newly created election.
 
     + Body
 
@@ -420,59 +337,16 @@ This endpoint deals with all elections data currently in the system.
             }
 
 + Response 400 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
-            }
-
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ## Election endpoint [/election/{election_id}]
 
 This endpoint returns an expanded data object describing the election specified via **election_id**.
 
 + Parameters
-    + election_id (string) - The unique MongoDB id of the election targeted by some operation.
+    + election_id (string) - The unique MongoDB ID of the election targeted by some operation.
 
 ### Return data about an election [GET]
 
@@ -486,7 +360,7 @@ This endpoint returns an expanded data object describing the election specified 
 + Response 200 (application/json)
 
     + Attributes (Election)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
 
     + Body
 
@@ -504,41 +378,9 @@ This endpoint returns an expanded data object describing the election specified 
             }
 
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
++ Response 404 (application/json)
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ### Merge data into an existing election [PUT]
 
@@ -549,89 +391,33 @@ This endpoint returns an expanded data object describing the election specified 
             key: your-special-api-key-here
             content-type: application/json
 
-    + Attributes (object)
-        + title: My Election (string) - [optional] Title of the election.
-        + description: Election description (string) - [optional] Description of the election.
-        + options (array[string]) - [optional] Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
-        + opens: 1589346000600 (number) - [optional] When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
-        + closes: 1589346900600 (number) - [optional] When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
+    + Attributes (Patch Election)
 
     + Body
 
             {
-                "description": "Posting a new election, look at me!",
-                "options": ["Option A", "Option B", "Option C"]
+                "description": "Posting a new description, look at me!",
+                "options": ["Option X", "Option Y", "Option Z"]
             }
 
 + Response 200 (application/json)
 
     + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
 
     + Body
 
             {
-                "success": true
+                "success": true,
+                // ...the keys and values that were successfully merged are returned
             }
 
 + Response 400 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
-            }
-
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 403 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "session can only mutate own elections"
-            }
-
++ Response 404 (application/json)
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ### Delete an election [DELETE]
 
@@ -645,7 +431,7 @@ This endpoint returns an expanded data object describing the election specified 
 + Response 200 (application/json)
 
     + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
 
     + Body
 
@@ -654,59 +440,17 @@ This endpoint returns an expanded data object describing the election specified 
             }
 
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 403 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "session can only delete own elections"
-            }
-
++ Response 404 (application/json)
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ## Voters endpoint [/election/{election_id}/voters]
 
 This endpoint deals with an election's mappings between voter IDs and rankings (votes).
 
 + Parameters
-    + election_id (string) - The unique MongoDB id of the election targeted by some operation.
+    + election_id (string) - The unique MongoDB ID of the election targeted by some operation.
 
 ### Return an election's mapping of voters to rankings [GET]
 
@@ -720,8 +464,8 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
 + Response 200 (application/json)
 
     + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
-        + votes: `{"voter_id":"1","ranking":["Biden", "Sanders"]}`,`{"voter_id":"2","ranking":["Sanders", "Biden"]}` (array[Vote]) - Array of objects each mapping a app-local voter ID to an election's option.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + votes (array[Vote]) - Array of vote objects representing the ranked choices of voters.
 
     + Body
 
@@ -736,41 +480,9 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             }
 
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
++ Response 404 (application/json)
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ### Replace an election's mapping of voters to rankings [PUT]
 
@@ -781,20 +493,20 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             key: your-special-api-key-here
             content-type: application/json
 
+    + Attributes (array[Vote])
+
     + Body
 
-            {
-                "votes": [
-                    {"voter_id": "voter1@email.com", "ranking": ["Vanilla", "Chocolate"]},
-                    {"voter_id": "voter2@email.com", "ranking": ["Chocolate", "Vanilla"]},
-                    {"voter_id": "voter3@email.com", "ranking": ["Vanilla", "Chocolate"]}
-                ]
-            }
+            [
+                {"voter_id": "voter1@email.com", "ranking": ["Option X", "Option Y"]},
+                {"voter_id": "voter2@email.com", "ranking": ["Option Z", "Option X"]},
+                {"voter_id": "voter3@email.com", "ranking": ["Option Z", "Option Y"]}
+            ]
 
 + Response 200 (application/json)
 
     + Attributes (object)
-        + success: true (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
+        + success (boolean) - If the request succeeded. Always `true` when status code is 200 and `false` or `undefined` otherwise.
 
     + Body
 
@@ -803,79 +515,44 @@ This endpoint deals with an election's mappings between voter IDs and rankings (
             }
 
 + Response 400 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "<error concerning parsing, syntax, JSON, formatting, bad key-values, etc>"
-            }
-
 + Response 401 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "invalid API key encountered"
-            }
-
 + Response 403 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-
-    + Body
-
-            {
-                "error": "session can only mutate own elections"
-            }
-
++ Response 404 (application/json)
 + Response 429 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + retryAfter (number) - Number of seconds your app should wait before sending another request.
-
-    + Body
-
-            {
-                "error": "session is rate limited",
-                "retryAfter": 900
-            }
-
 + Response 555 (application/json)
-
-    + Attributes (object)
-        + error (string) - Why the request failed.
-        + contrived (boolean) - If there was no actual error (fake error). Always `true` when status code is 555 and `false` or `undefined` otherwise. (real 5xx errors likely won't return any JSON at all).
-
-    + Body
-
-            {
-                "error": "(do not report this)",
-                "contrived": true
-            }
 
 ## Data Structures
 
-### Election (object)
-
-+ election_id: `5ec8adf06e38137ff2e58769` (string) - unique MongoDB id representing the election. Generated automatically by the server.
-+ title: My Election (string) - Title of the election.
-+ description: Election description (string) - Description of the election.
-+ options (array[string]) - Array of options voters are allowed to select from. Example: `["Biden","Sanders"]`
-+ created: 1589345900650  (number) - When this election was created [unix epoch seconds]. Generated automatically by the server.
-+ opens: 1589346000600 (number) - When this election opens for voting [unix epoch seconds]. Always smaller than `closes`.
-+ closes: 1589346900600 (number) - When this election closes to voting [unix epoch seconds]. Always larger than `opens`.
-+ owned: true (boolean) - If the API `Key` making the request created this election or not.
-+ deleted: false (boolean) - If this election has been marked as deleted.
-
 ### Vote (object)
 
-+ voter_id: myemail@me.com (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be.
-+ ranking: `"Biden"`,`"Sanders"` (array[string]) - Whichever ranked choices the voter represented by `voter_id` made when casting their vote. From left to right, the order of the array represents the ranking users' chose from most preferred to least preferred.
++ `voter_id` (string) - A unique (relative to your app) identifier representing a voter in your own system. This can be whatever string you'd like it to be. Example: `"myemail@me.com"`. Can be empty. **There cannot be two objects with the same `voter_id` in the same array of votes.**
++ ranking (array) - Whichever ranked choices the voter made when casting their vote. From left to right, the order of the array represents most preferred to least preferred. Example: `["Obama", "Romney"]`. Guaranteed to contain only valid options per election. Can be empty.
+
+### Election (object)
+
++ election_id (string) - A unique immutable MongoDB ID representing the election. Generated automatically by the server. Example: `5ec8adf06e38137ff2e58769`.
++ title (string) - Title of the election. Example: `"My Election"`.
++ description (string) - Description of the election. Example: `"An election"`. Can be empty.
++ options (array) - Array of options voters are allowed to select from. Example: `["Biden", "Warren"]`. Can be empty.
++ created (number) - When this election was created [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Generated automatically by the server. Not guaranteed to be smaller than `opens`. Example: `1579345900650`.
++ opens (number) - When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` and should be larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`.
++ closes (number) - When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`.
++ owned (boolean) - If the API `Key` making the request created this election or not. Example: `true`
++ deleted (boolean) - If this election has been marked as deleted. Example: `false`.
+
+### New Election (object)
+
++ title (string) - <span style="color: darkred">[required]</span> Title of the election. Example: `My Election`.
++ description (string) - <span style="color: gray">[optional]</span> Description of the election. Example: `Election`. Can be empty.
++ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty.
++ opens (number) - <span style="color: darkred">[required]</span> When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` but larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`.
++ closes (number) - <span style="color: darkred">[required]</span> When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`.
+
+### Patch Election (object)
+
++ title (string) - <span style="color: gray">[optional]</span> Title of the election. Example: `My Election`.
++ description (string) - <span style="color: gray">[optional]</span> Description of the election. Example: `Election`. Can be empty.
++ options (array) - <span style="color: gray">[optional]</span> Array of options voters are allowed to select from. Example: `["Biden", "Sanders"]`. Array elements must be strings. Can be empty. **Specifying this property will clear any votes associated with this election**.
++ opens (number) - <span style="color: gray">[optional]</span> When this election opens for voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be smaller than `closes` but larger than [`Date.now()`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Example: `1589346000600`. **When specifying this property, you must also specify the `closes` property.**
++ closes (number) - <span style="color: gray">[optional]</span> When this election closes to voting [in milliseconds since the unix epoch](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/now). Must be larger than `opens`. Example: `1589346900600`. **When specifying this property, you must also specify the `opens` property.**
++ deleted (boolean) - <span style="color: gray">[optional]</span> If this election has been marked as deleted. Only accepts `false`. Use the [proper endpoint](https://electionshscc.docs.apiary.io/#/reference/0/election-endpoint/delete-an-election) to set this to `true`. Example: `false`.

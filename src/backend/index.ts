@@ -196,7 +196,7 @@ export async function replaceRankings({ electionId, rankings }: EleVotRanParams)
             throw new ValidationError('invalid rankings property "voter_id"');
 
         if(ids.has(voterRanking.voter_id))
-            throw new ValidationError('illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"');
+            throw new ValidationError(`illegal rankings property "voter_id": duplicated id "${voterRanking.voter_id}"`);
 
         ids.add(voterRanking.voter_id);
 
@@ -260,12 +260,13 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
         if(!doesElectionExist(electionId))
             throw new NotFoundError(electionId);
 
-        title && (newData.title = title);
-        opens && (newData.opens = opens);
-        closes && (newData.closes = closes);
-        description && (newData.description = description);
+        title   && (newData.title   = title);
+        opens   && (newData.opens   = opens);
+        closes  && (newData.closes  = closes);
         options && (newData.options = options);
-        !isUndefined(deleted) && (newData.deleted = false);
+
+        !isUndefined(description) && (newData.description = description);
+        !isUndefined(deleted)     && (newData.deleted     = false);
     }
 
     else {
@@ -309,7 +310,8 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
     if(Object.keys(newData).length <= 0)
         throw new UpsertFailedError('empty upserts are not allowed');
 
-    const result = await (await getDb()).collection<InDbElection>('elections').updateOne(
+    const db = (await getDb());
+    const result = await db.collection<InDbElection>('elections').updateOne(
         { _id: electionId || new ObjectId() },
         {
             $set: {
@@ -337,6 +339,9 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
             rankings: []
         });
     }
+
+    else if(electionData.options)
+        await db.collection<InDbElection>('rankings').updateOne({ election_id: electionId }, { $set: { rankings: [] }});
 
     return newData as PartialInternalElection;
 }

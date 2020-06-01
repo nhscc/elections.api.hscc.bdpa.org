@@ -39,7 +39,7 @@ export function getEnv(loud=false) {
     }
 
     if(env.MAX_LIMIT < DEFAULT_RESULT_LIMIT)
-        throw new Error('MAX_LIMIT must be >= DEFAULT_RESULT_LIMIT (got ${env.MAX_LIMIT} < ${DEFAULT_RESULT_LIMIT})');
+        throw new Error(`MAX_LIMIT must be >= DEFAULT_RESULT_LIMIT (got ${env.MAX_LIMIT} < ${DEFAULT_RESULT_LIMIT})`);
 
     return env;
 }

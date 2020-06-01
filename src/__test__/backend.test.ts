@@ -371,7 +371,12 @@ describe('universe/backend', () => {
 
             const election2 = await Backend.upsertElection({
                 electionId: election1.election_id,
-                election: { ...newElection, opens: newElection.opens + 200, closes: newElection.closes + 300 }
+                election: {
+                    ...newElection,
+                    description: '',
+                    opens: newElection.opens + 200,
+                    closes: newElection.closes + 300,
+                }
             });
 
             // ? Bad props should be ignored
@@ -396,6 +401,7 @@ describe('universe/backend', () => {
             expect(election2.election_id).toEqual(election1.election_id);
             expect(election1.opens).toEqual(newElection.opens);
             expect(election2.opens).toEqual(newElection.opens + 200);
+            expect(election2.description).toEqual('');
 
             const returnedElection = await Backend.getInternalElection(election1.election_id || new ObjectId('bad'));
 
@@ -411,6 +417,14 @@ describe('universe/backend', () => {
             expect(returnedElection.created).not.toEqual(100);
             expect(returnedElection.opens).toEqual(newElection.opens + 200);
             expect(returnedElection.closes).toEqual(newElection.closes + 300);
+        });
+
+        it("updating `options` empties the election's voter rankings array", async () => {
+            const election_id = getHydratedData().elections.slice(-1)[0].election_id;
+
+            expect(await Backend.getRankings(election_id)).toBeArray();
+            await Backend.upsertElection({ electionId: election_id, election: { options: ['@', '#', '&'] }});
+            expect(await Backend.getRankings(election_id)).toBeEmpty();
         });
 
         it('rejects when missing necessary params', async () => {
