@@ -29,12 +29,17 @@ locally is in this repo except a running MongoDB instance.
 2. Clone this repo
 3. From the terminal, with the repo as the current working directory, run `npm
    install`
-4. Copy the file `dist.env` to `.env` and add your MongoDB connect URI to the
-   MONGODB_URI environment variable
+4. Copy the file `dist.env` to `.env`
+   * Add your MongoDB connect URI to the MONGODB_URI environment variable
+   * Set `HYDRATE_DB_ON_STARTUP=true` to have the database setup and hydrated
+     for you
 4. If you want to quickly test the API, run `npm test`
 5. To run the API in development mode, run `npm run dev`
-6. Navigate to the URL returned by the previous command to interact with the API
-   (using your browser, [Postman](https://www.postman.com/), or otherwise).
+6. If you set `HYDRATE_DB_ON_STARTUP=true` previously, navigate to the
+   *http://localhost:...* URL returned by the previous command to seed the
+   database with dummy data
+7. You can now interact with the API using your browser,
+   [Postman](https://www.postman.com/), or otherwise
 
 > Note: if you choose to run the API with NODE_ENV=production, the database will
 > not be automatically setup nor hydrated. Better to run the API in development
@@ -53,32 +58,35 @@ $ npm run list-tasks
 This API uses the following technologies:
 
 - Node and NPM to run JavaScript locally
-- TypeScript for producing typed JavaScript
+- [TypeScript](https://www.typescriptlang.org/) for producing typed JavaScript
 - Babel for compiling (transpiling) TypeScript + ESNext syntax
 - Gulp for running complex tasks
 - Git for version control
 - ESLint for TypeScript and JavaScript linting
-- Webpack for tree-shaking and asset bundling
-- JSX, React, and Next.JS for modern web development
+- [Webpack](https://webpack.js.org/) for tree-shaking and asset bundling
+- JSX, [React](https://reactjs.org/), and [Next](https://nextjs.org/) for modern
+  web development
 - MongoDB Node driver for database access
-- Jest for unit and integration testing
+- [Jest](https://jestjs.io/) for unit and integration testing
 
 ### Files and directories
 
 `tsconfig` controls the TypeScript settings used when *type checking* the
 project. Type checks are run once before the project is built during production
 deployments, otherwise they must be run manually (inconvenient) or by your IDE.
-If you're using vscode, you don't have to do anything it's all handled for
+If you're using a modern IDE like [vscode](https://code.visualstudio.com/)
+(highly recommended!), you don't have to do anything as it's all handled for
 you.
 
-
 `package.json` and `package-lock.json` are used by NPM to describe the
-dependencies that will be automatically installed when calling `npm install`.
+dependencies that will be automatically installed when executing `npm install`.
 
 `next.config.js` and `gulpfile.js` are transpiled scripts and should generally
 be ignored. You can find the real versions under the `config/` directory.
 `config/gulpfile.ts` defines all the Gulp tasks that can be run.
-`config/next.config.ts` returns a JSON object used to configure Next.js.
+`config/next.config.ts` returns a JSON object used to configure Next. If you
+make changes to `config/gulpfile.ts` or `config/next.config.ts`, be sure to run
+`npm run regenerate` afterwards to apply your changes.
 
 `dist.env` is the distributed environment file. It's meaningless on its own, but
 when copied and renamed to `.env`, it will be used by the API to define certain
@@ -94,7 +102,7 @@ folder serves a similar purpose.
 
 `src/` contains the source code of the application. `src/__test__` contains the
 unit and integration tests for the API. `src/backend` contains business logic
-and database access layer. `src/pages` contains React (JSX) TypeScript code
-(`.tsx` files). `src/pages/api` contains the actual API endpoints. The
-directories and files are named according to [Next.js dynamic
-routing](https://nextjs.org/docs/routing/dynamic-routes).
+and the database ORM layer (kept thin thanks to MongoDB). `src/pages` contains
+React (JSX) TypeScript code (`.tsx` files). `src/pages/api` contains the actual
+API endpoints. The directories and files are so named to take advantage of [Next
+dynamic routing](https://nextjs.org/docs/routing/dynamic-routes).
