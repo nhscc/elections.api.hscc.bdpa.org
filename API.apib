@@ -130,7 +130,7 @@ Paginated results:
 `limit=2, after=0xabc124`: returns an array with 2 items: *0xabc125* and *0xabc126*  
 `limit=1, after=0xabc127`: returns an array with 0 items since there is nothing after *0xabc127*  
 `after=0xabc124`: returns an array with the default limit of 3 items: *0xabc125* through *0xabc127*  
-`limit=0, after=0xabc123`: same as the very first result since `limit=0`, otherwise an array of the last 4 items is returned   
+`limit=0, after=0xabc123`: same as the very first result since `limit=0`; of instead `limit>=0`, an array of the last `max(limit, 4)` items would be returned  
 
 ## Status Codes
 
