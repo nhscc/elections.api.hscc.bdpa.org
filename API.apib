@@ -126,11 +126,11 @@ Paginated results:
 `limit=1`: an array with only the first item is returned  
 `limit=5`: an array of 5 items is returned (the whole dataset!)  
 `limit=10`: since there are only 5 items total, same as the previous result  
-`limit=10, after=0xabc123`: same as the previous result  
+`limit=10, after=0xabcXYZ`: since *0xabcXYZ* doesn't exist, this is same as the previous result  
 `limit=2, after=0xabc124`: returns an array with 2 items: *0xabc125* and *0xabc126*  
 `limit=1, after=0xabc127`: returns an array with 0 items since there is nothing after *0xabc127*  
 `after=0xabc124`: returns an array with the default limit of 3 items: *0xabc125* through *0xabc127*  
-`limit=0, after=0xabc123`: same as the very first result  
+`limit=0, after=0xabc123`: same as the very first result since `limit=0`, otherwise an array of the last 4 items is returned   
 
 ## Status Codes
 
