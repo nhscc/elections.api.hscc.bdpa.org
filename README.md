@@ -21,7 +21,7 @@ locally is in this repo except a running MongoDB instance.
 
 > This project has been tested on Linux (Kubuntu) and Windows 10 Pro. If you
 > encounter any issues (especially Windows-specific issues), please [report
-> it](https://github.com/nhscc/elections.api.hscc.bdpa.org/issues/new).
+> them](https://github.com/nhscc/elections.api.hscc.bdpa.org/issues/new).
 
 1. Ensure the latest [NodeJS](https://nodejs.org/en/) and
    [MongoDB](https://docs.mongodb.com/manual/installation/) are installed and
