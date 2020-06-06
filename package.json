@@ -8,6 +8,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "gulp checkEnv && next -p `npx -q get-clean-port`",
+    "dev-windows": "gulp checkEnv && next -p 3000",
     "build": "gulp checkEnv && next build",
     "start": "gulp checkEnv && next start",
     "test": "jest",
@@ -16,8 +17,7 @@
     "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
-    "check-types": "tsc && echo 'no problems detected!'",
-    "reset-db": "echo 'This can be achieved with command `NODE_ENV=development HYDRATE_DB_ON_STARTUP=true npm run dev`'"
+    "check-types": "tsc && echo 'no problems detected!'"
   },
   "author": "Xunnamius",
   "license": "ISC",

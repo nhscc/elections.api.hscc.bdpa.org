@@ -132,14 +132,16 @@ describe('api/v1/elections', () => {
 
                 expect(responses.some(o => !o?.success)).toBeFalse();
 
-                expect(responses[0].elections).toEqual(elections.slice(0, 1));
-                expect(responses[1].elections).toEqual(elections.slice(0, 5));
-                expect(responses[2].elections).toEqual(elections.slice(0, 10));
-                expect(responses[3].elections).toEqual(elections.slice(0, 50));
-                expect(responses[4].elections).toEqual(elections.slice(1, 51));
-                expect(responses[5].elections).toEqual(elections.slice(11, 61));
-                expect(responses[6].elections).toEqual(elections.slice(46, 61));
-                expect(responses[7].elections).toEqual(elections.slice(21, 51));
+                expect(responses.map(r => r.elections)).toIncludeSameMembers([
+                    elections.slice(0, 1),
+                    elections.slice(0, 5),
+                    elections.slice(0, 10),
+                    elections.slice(0, 50),
+                    elections.slice(1, 51),
+                    elections.slice(11, 61),
+                    elections.slice(46, 61),
+                    elections.slice(21, 51)
+                ]);
             }
         });
     });
@@ -164,14 +166,16 @@ describe('api/v1/elections', () => {
                     return fetch({ headers: { KEY } }).then(r => r.status);
                 }));
 
-                expect(responses[0]).toBe(400);
-                expect(responses[1]).toBe(200);
-                expect(responses[2]).toBe(200);
-                expect(responses[3]).toBe(200);
-                expect(responses[4]).toBe(200);
-                expect(responses[5]).toBe(404);
-                expect(responses[6]).toBe(404);
-                expect(responses[7]).toBe(404);
+                expect(responses).toIncludeSameMembers([
+                    400,
+                    200,
+                    200,
+                    200,
+                    200,
+                    404,
+                    404,
+                    404
+                ]);
             }
         });
     });

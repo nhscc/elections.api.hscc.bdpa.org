@@ -65,7 +65,7 @@ describe('universe/backend/middleware', () => {
                         ...[...Array(expectedReqPerError)].map(_ => getStatus(fetch({ method: getMethod() }))),
                     ].map(p => p.then(s => s, _ => null)));
 
-                    expect(results1).toEqual([
+                    expect(results1).toIncludeSameMembers([
                         ...[...Array(expectedReqPerError - 1)].map(_ => 200),
                         555,
                         ...[...Array(expectedReqPerError - 1)].map(_ => 200),
