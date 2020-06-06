@@ -40,9 +40,7 @@ locally is in this repo except a running MongoDB instance.
 4. If you want to quickly test the API, run `npm test`
 5. To run the API in development mode, run `npm run dev`
    * If you're on Windows, run `npm run dev-windows` instead!
-6. If you set `HYDRATE_DB_ON_STARTUP=true` previously, navigate to the
-   *http://localhost:...* URL returned by the previous command to seed the
-   database with dummy data
+6. If you set `HYDRATE_DB_ON_STARTUP=true` previously, navigate to the API's URI (details below) using your browser to finish setting up the database
    * If you're using MongoDB Compass, you'll be able to visually explore the dummy database's data
 7. You can now interact with the API using your browser,
    [Postman](https://www.postman.com/), or otherwise
