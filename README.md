@@ -32,10 +32,10 @@ You should be using the production version of the API (and your key) for your ap
 4. Copy the file `dist.env` to `.env`
    * [Install MongoDB](https://www.mongodb.com/download-center/community) if you have not already and start it up
       * If you're on Windows, you might also be interested in MongoDB Compass (bundled with the installer)
-   * Add your MongoDB connect URI to the MONGODB_URI environment variable
+   * Add your MongoDB connect URI to the MONGODB_URI environment variable in `.env`
       * The URI should look like this: `mongodb://localhost:your-port-number/my-test-db-name`, i.e. `mongodb://localhost:27017/test`
       * It is important that you include the name of the test database after the slash (you can just make something up) like in the above examples
-   * Set `HYDRATE_DB_ON_STARTUP=true` to have the database you specified in the connect URI automatically configured and hydrated
+   * Set `HYDRATE_DB_ON_STARTUP=true` in `.env` to have the database you specified in the connect URI automatically configured and hydrated
 5. If you want to quickly test the API, run `npm test`
 6. To run the API in development mode, run `npm run dev`
    * If you're on Windows, run `npm run dev-windows` instead!
