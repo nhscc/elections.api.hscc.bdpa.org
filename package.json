@@ -12,12 +12,12 @@
     "build": "gulp checkEnv && next build",
     "start": "gulp checkEnv && next start",
     "test": "jest",
-    "generate": "BABEL_ENV=generator babel config --extensions '.ts' --out-dir .",
+    "generate": "BABEL_ENV=generator babel config --extensions \".ts\" --out-dir .",
     "regenerate": "gulp regenerate",
-    "list-tasks": "npm run && echo 'Compiling gulp task list...' && gulp --tasks",
+    "list-tasks": "npm run && echo \"Compiling gulp task list...\" && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
-    "check-types": "tsc && echo 'no problems detected!'"
+    "check-types": "tsc && echo \"no problems detected!\""
   },
   "author": "Xunnamius",
   "license": "ISC",
