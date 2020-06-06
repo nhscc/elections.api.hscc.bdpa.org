@@ -36,8 +36,8 @@ You should be using the production version of the API (and your key) for your ap
       * The URI should look like this: `mongodb://localhost:your-port-number/my-test-db-name`, i.e. `mongodb://localhost:27017/test`
       * It is important that you include the name of the test database after the slash (you can just make something up) like in the above examples
    * Set `HYDRATE_DB_ON_STARTUP=true` in `.env` to have the database you specified in the connect URI automatically configured and hydrated
-5. If you want to quickly test the API, run `npm test`
-6. To run the API in development mode, run `npm run dev`
+5. At this point you should test that the API will work on your system. To do this, run the command `npm test` in your terminal
+6. If all tests passed, you can start up the API in development mode by running the `npm run dev` command
    * If you're on Windows, run `npm run dev-windows` instead!
 7. If you set `HYDRATE_DB_ON_STARTUP=true` previously, navigate to the API's URI (details below) using your browser to finish setting up the database
    * If you're using MongoDB Compass, you'll be able to visually explore the dummy database's data
