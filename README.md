@@ -16,8 +16,7 @@ Documentation and playground with examples: https://electionshscc.docs.apiary.io
 
 ## Running a local version of the API
 
-This project is (mostly) self-contained. Everything you need to run the API
-locally is in this repo except a running MongoDB instance.
+You should be using the production version of the API (and your key) for your application. However, for development purposes, you can also run a local version of the API to make requests against. This API is self-contained aside from MongoDB; everything you need to run it locally is in this repo (except a running MongoDB instance). Follow the instructions below:
 
 > This project has been tested on Linux (Kubuntu) and Windows 10 Pro. If you
 > encounter any issues (especially Windows-specific issues), please [report
