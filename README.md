@@ -19,27 +19,34 @@ Documentation and playground with examples: https://electionshscc.docs.apiary.io
 This project is (mostly) self-contained. Everything you need to run the API
 locally is in this repo except a running MongoDB instance.
 
-> Note: this project has only been tested on Linux (Kubuntu). If you encounter
-> any Windows-specific issues, please [report
+> This project has been tested on Linux (Kubuntu) and Windows 10 Pro. If you
+> encounter any issues (especially Windows-specific issues), please [report
 > it](https://github.com/nhscc/elections.api.hscc.bdpa.org/issues/new).
 
 1. Ensure the latest [NodeJS](https://nodejs.org/en/) and
    [MongoDB](https://docs.mongodb.com/manual/installation/) are installed and
-   set up
-2. Clone this repo
+   set up.
+2. Clone this repo using your favorite terminal
 3. From the terminal, with the repo as the current working directory, run `npm
    install`
+   * If you're on Windows, you should also run `npm install -g gulp-cli` before continuing
 4. Copy the file `dist.env` to `.env`
+   * [Install MongoDB](https://www.mongodb.com/download-center/community) if you have not already and start it up
+      * If you're on Windows, you might also be interested in MongoDB Compass (bundled with the installer)
    * Add your MongoDB connect URI to the MONGODB_URI environment variable
-   * Set `HYDRATE_DB_ON_STARTUP=true` to have the database setup and hydrated
-     for you
+      * The URI should look like this: `mongodb://localhost:your-port-number/my-test-db-name`, i.e. `mongodb://localhost:27017/test`
+      * It is important that you include the name of the test database after the slash (you can just make something up) like in the above examples
+   * Set `HYDRATE_DB_ON_STARTUP=true` to have the database you specified in the connect URI automatically configured and hydrated
 4. If you want to quickly test the API, run `npm test`
 5. To run the API in development mode, run `npm run dev`
+   * If you're on Windows, run `npm run dev-windows` instead!
 6. If you set `HYDRATE_DB_ON_STARTUP=true` previously, navigate to the
    *http://localhost:...* URL returned by the previous command to seed the
    database with dummy data
+   * If you're using MongoDB Compass, you'll be able to visually explore the dummy database's data
 7. You can now interact with the API using your browser,
    [Postman](https://www.postman.com/), or otherwise
+   * You should see a line on the console that looks like `ready - started server on <URI HEERE>`. Use that URI to access the API.
 
 > Note: if you choose to run the API with NODE_ENV=production, the database will
 > not be automatically setup nor hydrated. Better to run the API in development
