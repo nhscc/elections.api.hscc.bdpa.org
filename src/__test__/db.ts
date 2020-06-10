@@ -195,9 +195,9 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
      })));
 
     await mviewDb.insertMany([
-        { ip: '1.2.3.4', until: Date.now() + 10**5 } as LimitedLogEntry,
-        { ip: '5.6.7.8', until: Date.now() + 10**6 } as LimitedLogEntry,
-        { key: NULL_KEY, until: Date.now() + 10**7 } as LimitedLogEntry
+        { ip: '1.2.3.4', until: Date.now() + 1000 * 60 * 15 } as LimitedLogEntry,
+        { ip: '5.6.7.8', until: Date.now() + 1000 * 60 * 15 } as LimitedLogEntry,
+        { key: NULL_KEY, until: Date.now() + 1000 * 60 * 60 } as LimitedLogEntry
     ]);
 
     return newData;

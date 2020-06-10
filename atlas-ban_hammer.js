@@ -1,3 +1,10 @@
+const oneSecond = 1000;
+
+const scheduledToRepeatEvery    = oneSecond * 60;       // * seconds
+const maxRequestsPerSecond      = 10;                   // * requests per second
+const resolutionWindow          = oneSecond * 10;       // * seconds
+const defaultBanTime            = oneSecond * 60 * 15;  // * seconds
+
 const pipeline = [
     { $limit: 1 },
     {
@@ -14,27 +21,27 @@ const pipeline = [
                 {
                     $match: {
                         key: { $ne: null },
-                        $expr: { $gte: ['$time', { $subtract: [{ $toLong: '$$NOW' }, 1000 * 60] }]}
+                        $expr: { $gte: ['$time', { $subtract: [{ $toLong: '$$NOW' }, scheduledToRepeatEvery] }]}
                     }
                 },
                 {
                     $group: {
                         _id: {
                             key: '$key',
-                            interval: { $subtract: ['$time', { $mod: ['$time', 1000 * 10] }]}
+                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindow] }]}
                         },
                         count: { $sum: 1 }
                     }
                 },
                 {
                     $match: {
-                        count: { $gte: 10 }
+                        count: { $gt: maxRequestsPerSecond }
                     }
                 },
                 {
                     $project: {
                         key: '$_id.key',
-                        until: { $add: [{ $toLong: '$$NOW' }, 1000 * 60 * 15] }
+                        until: { $add: [{ $toLong: '$$NOW' }, defaultBanTime] }
                     }
                 },
                 {
@@ -53,27 +60,27 @@ const pipeline = [
             pipeline: [
                 {
                     $match: {
-                        $expr: { $gte: ['$time', { $subtract: [{ $toLong: '$$NOW' }, 1000 * 60] }]}
+                        $expr: { $gte: ['$time', { $subtract: [{ $toLong: '$$NOW' }, scheduledToRepeatEvery] }]}
                     }
                 },
                 {
                     $group: {
                         _id: {
                             ip: '$ip',
-                            interval: { $subtract: ['$time', { $mod: ['$time', 1000 * 10] }]}
+                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindow] }]}
                         },
                         count: { $sum: 1 }
                     }
                 },
                 {
                     $match: {
-                        count: { $gte: 10 }
+                        count: { $gt: maxRequestsPerSecond }
                     }
                 },
                 {
                     $project: {
                         ip: '$_id.ip',
-                        until: { $add: [{ $toLong: '$$NOW' }, 1000 * 60 * 15] }
+                        until: { $add: [{ $toLong: '$$NOW' }, defaultBanTime] }
                     }
                 },
                 {
@@ -92,7 +99,7 @@ const pipeline = [
             pipeline: [
                 {
                     $match: {
-                        $expr: { $gte: ['$until', { $subtract: [{ $toLong: '$$NOW' }, 1000 * 60 * 30] }]}
+                        $expr: { $gte: ['$until', { $subtract: [{ $toLong: '$$NOW' }, defaultBanTime * 2] }]}
                     }
                 },
                 {
@@ -137,7 +144,7 @@ const pipeline = [
             until: {
                 $cond: {
                     if: { $ne: ['$count', 1] },
-                    then: { $add: [{ $toLong: '$$NOW' }, 1000 * 60 * 60] },
+                    then: { $add: [{ $toLong: '$$NOW' }, defaultBanTime * 4] },
                     else: '$until'
                 }
             },

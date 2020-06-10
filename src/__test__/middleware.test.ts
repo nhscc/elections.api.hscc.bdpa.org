@@ -303,13 +303,20 @@ describe('universe/backend/middleware', () => {
 
                     expect((await fetch({ headers: { key } })).status).toBe(200);
 
-                    entry = await limitedLog.insertOne({ key: null, ip, until: Date.now() + 10**5 });
-                    expect((await fetch({ headers: { key } })).status).toBe(429);
+                    const _now = Date.now;
+                    const now = Date.now();
+                    Date.now = () => now;
+
+                    entry = await limitedLog.insertOne({ ip, until: now + 1000 * 60 * 15 });
+                    const res = await fetch({ headers: { key } });
+                    expect(res.status).toBe(429);
+
+                    expect(await res.json()).toContainEntry<{ retryAfter: number }>([ 'retryAfter', 1000 * 60 * 15 ]);
 
                     await limitedLog.deleteOne({ _id: entry.insertedId });
                     expect((await fetch({ headers: { key } })).status).toBe(200);
 
-                    entry = await limitedLog.insertOne({ key, ip: null, until: Date.now() + 10**5 });
+                    entry = await limitedLog.insertOne({ key, until: Date.now() + 1000 * 60 * 60 });
                     expect((await fetch({ headers: { key } })).status).toBe(429);
 
                     process.env.IGNORE_RATE_LIMITS = 'true';
@@ -321,13 +328,7 @@ describe('universe/backend/middleware', () => {
                     await limitedLog.deleteOne({ _id: entry.insertedId });
                     expect((await fetch({ headers: { key } })).status).toBe(200);
 
-                    entry = await limitedLog.insertOne({ key, ip, until: Date.now() + 10**5 });
-                    expect((await fetch({ headers: { key } })).status).toBe(429);
-                    expect((await fetch()).status).toBe(401);
-
-                    await limitedLog.deleteOne({ _id: entry.insertedId });
-                    expect((await fetch({ headers: { key } })).status).toBe(200);
-                    expect((await fetch()).status).toBe(401);
+                    Date.now = _now;
                 }
             });
         });

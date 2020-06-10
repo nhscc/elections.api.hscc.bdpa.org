@@ -80,8 +80,10 @@ export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }
                     resp.$send(...args);
                 };
 
-                if(!getEnv().IGNORE_RATE_LIMITS && await isRateLimited(req))
-                    sendHttpRateLimited(res);
+                const { limited, retryAfter } = await isRateLimited(req);
+
+                if(!getEnv().IGNORE_RATE_LIMITS && limited)
+                    sendHttpRateLimited(res, { retryAfter });
 
                 else {
                     await fn({ req, res: resp });

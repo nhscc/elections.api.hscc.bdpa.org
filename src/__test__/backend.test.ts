@@ -1146,42 +1146,65 @@ describe('universe/backend', () => {
 
     describe('::isRateLimited', () => {
         it('returns true if ip or key are rate limited', async () => {
-            const req1 = {
+            const _now = Date.now;
+            const now = Date.now();
+            Date.now = () => now;
+
+            const req1 = await Backend.isRateLimited({
                 headers: { 'x-forwarded-for': '1.2.3.4' },
                 method: 'POST',
                 url: '/api/route/path1'
-            } as unknown as NextApiRequest;
+            } as unknown as NextApiRequest);
 
-            const req2 = {
+            const req2 = await Backend.isRateLimited({
                 headers: {
                     'x-forwarded-for': '8.8.8.8',
                     'key': Backend.NULL_KEY
                 },
                 method: 'GET',
                 url: '/api/route/path2'
-            } as unknown as NextApiRequest;
+            } as unknown as NextApiRequest);
 
-            const req3 = {
+            const req3 = await Backend.isRateLimited({
                 headers: {
                     'x-forwarded-for': '1.2.3.4',
                     'key': 'fake-key'
                 },
                 method: 'POST',
                 url: '/api/route/path1'
-            } as unknown as NextApiRequest;
+            } as unknown as NextApiRequest);
 
-            const req4 = {
+            const req4 = await Backend.isRateLimited({
                 headers: {
                     'x-forwarded-for': '5.6.7.8',
                 },
                 method: 'POST',
                 url: '/api/route/path1'
-            } as unknown as NextApiRequest;
+            } as unknown as NextApiRequest);
 
-            expect(await Backend.isRateLimited(req1)).toEqual(true);
-            expect(await Backend.isRateLimited(req2)).toEqual(true);
-            expect(await Backend.isRateLimited(req3)).toEqual(true);
-            expect(await Backend.isRateLimited(req4)).toEqual(true);
+            const req5 = await Backend.isRateLimited({
+                headers: {
+                    'x-forwarded-for': '1.2.3.4',
+                    'key': Backend.NULL_KEY
+                },
+                method: 'POST',
+                url: '/api/route/path1'
+            } as unknown as NextApiRequest);
+
+            expect(req1.limited).toBeTrue();
+            expect(req2.limited).toBeTrue();
+            expect(req3.limited).toBeTrue();
+            expect(req4.limited).toBeTrue();
+            expect(req5.limited).toBeTrue();
+
+            expect(req1.retryAfter).toBeWithin(1000 * 60 * 15 - 1000, 1000 * 60 * 15 + 1000);
+            expect(req2.retryAfter).toBeWithin(1000 * 60 * 60 - 1000, 1000 * 60 * 60 + 1000);
+            expect(req3.retryAfter).toBeWithin(1000 * 60 * 15 - 1000, 1000 * 60 * 15 + 1000);
+            expect(req4.retryAfter).toBeWithin(1000 * 60 * 15 - 1000, 1000 * 60 * 15 + 1000);
+            // ? Should return greater of the two ban times (key time > ip time)
+            expect(req5.retryAfter).toBeWithin(1000 * 60 * 60 - 1000, 1000 * 60 * 60 + 1000);
+
+            Date.now = _now;
         });
 
         it('returns false iff both ip and key (if provided) are not rate limited', async () => {
@@ -1200,8 +1223,8 @@ describe('universe/backend', () => {
                 url: '/api/route/path2'
             } as unknown as NextApiRequest;
 
-            expect(await Backend.isRateLimited(req1)).toEqual(false);
-            expect(await Backend.isRateLimited(req2)).toEqual(false);
+            expect(await Backend.isRateLimited(req1)).toEqual({ limited: false, retryAfter: 0 });
+            expect(await Backend.isRateLimited(req2)).toEqual({ limited: false, retryAfter: 0 });
         });
 
         it('returns false if "until" time has passed', async () => {
@@ -1211,14 +1234,14 @@ describe('universe/backend', () => {
                 url: '/api/route/path1'
             } as unknown as NextApiRequest;
 
-            expect(await Backend.isRateLimited(req)).toEqual(true);
+            expect(await Backend.isRateLimited(req)).toContainEntry([ 'limited', true ]);
 
             await (await getDb()).collection<LimitedLogEntry>('limited-log-mview').updateOne(
                 { ip: '1.2.3.4' },
                 { $set: { until: Date.now() - 10**5 }}
             );
 
-            expect(await Backend.isRateLimited(req)).toEqual(false);
+            expect(await Backend.isRateLimited(req)).toEqual({ limited: false, retryAfter: 0 });
         });
     });
 

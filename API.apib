@@ -36,9 +36,9 @@ system.
    **Limit your apps to no more than 10 requests per second per API key**. If
    your app ends up sending too many requests over some time period, you'll get
    a `HTTP 429` response along with a monotonically increasing soft ban
-   (starting at 5 minutes). Similarly, the size of requests is strictly limited,
-   so you must limit the amount of data you're sending. When you send a request
-   that is too large (>100KB), it will fail with a `HTTP 413` response.
+   (starting at 15 minutes). Similarly, the size of requests is strictly
+   limited, so you must limit the amount of data you're sending. When you send a
+   request that is too large (>100KB), it will fail with a `HTTP 413` response.
 
 2. **Do not reveal your API key to anyone** not on your own team. It is how the
    API identifies your team. Do not upload it to GitHub or leave it lying around
@@ -88,9 +88,9 @@ the same ID, even across different teams. Use this fact to your advantage.
 ## Rate Limits
 
 As said earlier, do not bombard the API with requests. If you do, the API will
-soft ban you for five minutes the first time before accepting requests from your
-API key or IP address again. Each following time this happens within a certain
-period, your ban time will double.
+soft ban you for fifteen minutes the first time before accepting requests from
+your API key or IP address again. Each following time this happens within a
+certain period, your ban time will quadruple.
 
 So **limit your apps to no more than 10 requests per second per API key**. You
 know you've been soft banned if you receive an `HTTP 429` response. Check the

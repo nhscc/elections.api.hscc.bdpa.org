@@ -387,14 +387,19 @@ export async function addToRequestLog({ req, res }: NextParamsRR): Promise<void>
     await (await getDb()).collection<WithId<RequestLogEntry>>('request-log').insertOne(logEntry);
 }
 
-export async function isRateLimited(req: NextApiRequest): Promise<boolean> {
+export async function isRateLimited(req: NextApiRequest): Promise<{ limited: boolean; retryAfter: number }> {
     const ip = getClientIp(req);
     const key = req.headers?.key?.toString() || null;
 
-    return !!await (await getDb()).collection<WithId<LimitedLogEntry>>('limited-log-mview').find({
+    const limited = (await (await getDb()).collection<WithId<LimitedLogEntry>>('limited-log-mview').find({
         $or: [...(ip ? [{ ip }]: []), ...(key ? [{ key }]: [])],
         until: { $gt: Date.now() }
-    }).limit(1).count();
+    }).sort({ until: -1 }).limit(1).toArray())[0] || null;
+
+    return {
+        limited: !!limited,
+        retryAfter: (limited?.until || Date.now()) - Date.now()
+    };
 }
 
 export function isDueForContrivedError(): boolean {
