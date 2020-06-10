@@ -2,8 +2,10 @@ const oneSecond = 1000;
 
 const scheduledToRepeatEvery    = oneSecond * 60;       // * seconds
 const maxRequestsPerSecond      = 10;                   // * requests per second
-const resolutionWindow          = oneSecond * 10;       // * seconds
+const resolutionWindowSeconds   = 10;                   // * seconds
 const defaultBanTime            = oneSecond * 60 * 15;  // * seconds
+
+const resolutionWindowMs        = oneSecond * resolutionWindowSeconds;
 
 const pipeline = [
     { $limit: 1 },
@@ -28,14 +30,14 @@ const pipeline = [
                     $group: {
                         _id: {
                             key: '$key',
-                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindow] }]}
+                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindowMs] }]}
                         },
                         count: { $sum: 1 }
                     }
                 },
                 {
                     $match: {
-                        count: { $gt: maxRequestsPerSecond }
+                        count: { $gt: resolutionWindowSeconds * maxRequestsPerSecond }
                     }
                 },
                 {
@@ -67,14 +69,14 @@ const pipeline = [
                     $group: {
                         _id: {
                             ip: '$ip',
-                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindow] }]}
+                            interval: { $subtract: ['$time', { $mod: ['$time', resolutionWindowMs] }]}
                         },
                         count: { $sum: 1 }
                     }
                 },
                 {
                     $match: {
-                        count: { $gt: maxRequestsPerSecond }
+                        count: { $gt: resolutionWindowSeconds * maxRequestsPerSecond }
                     }
                 },
                 {
