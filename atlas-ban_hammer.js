@@ -166,5 +166,5 @@ const pipeline = [
 ];
 
 exports = function() {
-  context.services.get('mars-1').db('hscc-api-elections').collection('request-log').aggregate(pipeline);
+    context.services.get('mars-1').db('hscc-api-elections').collection('request-log').aggregate(pipeline);
 };
