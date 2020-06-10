@@ -95,7 +95,8 @@ certain period, your ban time will quadruple.
 So **limit your apps to no more than 10 requests per second per API key**. You
 know you've been soft banned if you receive an `HTTP 429` response. Check the
 JSON response for the `retryAfter` key, which holds a number representing how
-long your API key and IP are banned from making further requests (in seconds).
+long your API key and/or IP are banned from making further requests (in
+milliseconds).
 
 ## Pagination
 
