@@ -2,7 +2,7 @@ const oneSecond = 1000;
 
 const scheduledToRepeatEvery    = oneSecond * 60;       // * seconds
 const maxRequestsPerSecond      = 10;                   // * requests per second
-const resolutionWindowSeconds   = 10;                   // * seconds
+const resolutionWindowSeconds   = 1;                    // * seconds
 const defaultBanTime            = oneSecond * 60 * 15;  // * seconds
 
 const resolutionWindowMs        = oneSecond * resolutionWindowSeconds;
