@@ -55,68 +55,64 @@ export const config = { api: { bodyParser: { sizeLimit: getEnv().MAX_CONTENT_LEN
  * endpoints).
  */
 export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
-    await runCorsMiddleware(req, res);
+    try {
+        await runCorsMiddleware(req, res);
 
-    if(getEnv().LOCKOUT_ALL_KEYS || typeof req.headers.key != 'string' || !(await isKeyAuthentic(req.headers.key)))
-        sendHttpUnauthenticated(res);
+        const { limited, retryAfter } = await isRateLimited(req);
 
-    else if(!req.method || getEnv().DISALLOWED_METHODS.includes(req.method) || !methods.includes(req.method))
-        sendHttpBadMethod(res);
+        if(!getEnv().IGNORE_RATE_LIMITS && limited)
+            sendHttpRateLimited(res, { retryAfter });
 
-    else {
-        try {
-            if(isDueForContrivedError())
-                sendHttpContrivedError(res);
+        else if(getEnv().LOCKOUT_ALL_KEYS || typeof req.headers.key != 'string' || !(await isKeyAuthentic(req.headers.key)))
+            sendHttpUnauthenticated(res);
 
-            else {
-                const resp = res as typeof res & { $send: typeof res.send };
-                // ? This will let us know if the sent method was called
-                let sent = false;
+        else if(!req.method || getEnv().DISALLOWED_METHODS.includes(req.method) || !methods.includes(req.method))
+            sendHttpBadMethod(res);
 
-                resp.$send = resp.send;
-                resp.send = (...args): void => {
-                    sent = true;
-                    addToRequestLog({ req, res });
-                    resp.$send(...args);
-                };
+        else if(isDueForContrivedError())
+            sendHttpContrivedError(res);
 
-                const { limited, retryAfter } = await isRateLimited(req);
+        else {
+            const resp = res as typeof res & { $send: typeof res.send };
+            // ? This will let us know if the sent method was called
+            let sent = false;
 
-                if(!getEnv().IGNORE_RATE_LIMITS && limited)
-                    sendHttpRateLimited(res, { retryAfter });
+            resp.$send = resp.send;
+            resp.send = (...args): void => {
+                sent = true;
+                addToRequestLog({ req, res });
+                resp.$send(...args);
+            };
 
-                else {
-                    await fn({ req, res: resp });
+            await fn({ req, res: resp });
 
-                    // ? If the response hasn't been sent yet, send one now
-                    !sent && sendNotImplementedError(res);
-                }
-            }
+            // ? If the response hasn't been sent yet, send one now
+            !sent && sendNotImplementedError(res);
+        }
+    }
+
+    catch(error) {
+        if(error instanceof GuruMeditationError)
+            sendHttpError(res, { error: 'sanity check failed: please report exactly what you did just now!' });
+
+        else if((error instanceof UpsertFailedError) ||
+          (error instanceof IdTypeError) ||
+          (error instanceof ApiKeyTypeError) ||
+          (error instanceof LimitTypeError) ||
+          (error instanceof ValidationError)) {
+            sendHttpBadRequest(res, { ...(error.message ? { error: error.message } : {}) });
         }
 
-        catch(error) {
-            if(error instanceof GuruMeditationError)
-                sendHttpError(res, { error: 'sanity check failed: please report exactly what you did just now!' });
+        else if(error instanceof NotAuthorizedError)
+            sendHttpUnauthorized(res);
 
-            else if((error instanceof UpsertFailedError) ||
-              (error instanceof IdTypeError) ||
-              (error instanceof ApiKeyTypeError) ||
-              (error instanceof LimitTypeError) ||
-              (error instanceof ValidationError)) {
-                sendHttpBadRequest(res, { ...(error.message ? { error: error.message } : {}) });
-            }
+        else if(error instanceof NotFoundError)
+            sendHttpNotFound(res);
 
-            else if(error instanceof NotAuthorizedError)
-                sendHttpUnauthorized(res);
+        else if(error instanceof AppError)
+            sendHttpError(res, { ...(error.message ? { error: error.message } : {}) });
 
-            else if(error instanceof NotFoundError)
-                sendHttpNotFound(res);
-
-            else if(error instanceof AppError)
-                sendHttpError(res, { ...(error.message ? { error: error.message } : {}) });
-
-            else
-                sendHttpError(res);
-        }
+        else
+            sendHttpError(res);
     }
 }
