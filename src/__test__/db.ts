@@ -185,7 +185,7 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
     const requestLogDb = db.collection<WithId<RequestLogEntry>>('request-log');
     const mviewDb = db.collection<LimitedLogEntry>('limited-log-mview');
 
-    await requestLogDb.insertMany([...Array(12)].map((_, ndx) => ({
+    await requestLogDb.insertMany([...Array(22)].map((_, ndx) => ({
         ip: '1.2.3.4',
         key: ndx % 2 ? null : NULL_KEY,
         method: ndx % 3 ? 'GET' : 'POST',
