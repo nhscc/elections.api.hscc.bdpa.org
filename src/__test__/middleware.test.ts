@@ -20,6 +20,8 @@ const nextApiHandler = (p: (req: NextApiRequest, res: NextApiResponse) => Promis
     return api;
 };
 
+jest.setTimeout(10**6);
+
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
 
 describe('universe/backend/middleware', () => {
@@ -121,7 +123,7 @@ describe('universe/backend/middleware', () => {
                     await new Promise(resolve => setTimeout(() => resolve(), 500));
 
                     const logs = await (await getDb()).collection<RequestLogEntry>('request-log').find().sort({
-                        time: -1
+                        time: 1
                     }).limit(4).project({
                         _id: false,
                         time: false,

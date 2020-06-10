@@ -97,6 +97,10 @@ export type RequestLogEntry = {
 export type LimitedLogEntry = {
     until: number;
     ip: string | null;
+    key?: never;
+} | {
+    until: number;
+    ip?: never;
     key: string | null;
 };
 

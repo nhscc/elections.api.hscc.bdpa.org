@@ -183,21 +183,21 @@ export async function hydrateDb(db: Db, data: DummyDbData): Promise<DummyDbData>
 
     // Push new requests to the log and update limited-log-mview accordingly
     const requestLogDb = db.collection<WithId<RequestLogEntry>>('request-log');
-    const mviewDb = db.collection<WithId<LimitedLogEntry>>('limited-log-mview');
+    const mviewDb = db.collection<LimitedLogEntry>('limited-log-mview');
 
     await requestLogDb.insertMany([...Array(20)].map((_, ndx) => ({
         ip: '1.2.3.4',
         key: ndx % 2 ? null : NULL_KEY,
         method: ndx % 3 ? 'GET' : 'POST',
         route: 'fake/route',
-        time: Date.now(),
+        time: Date.now() + 10**5/2,
         resStatusCode: 200,
      })));
 
     await mviewDb.insertMany([
-        { ip: '1.2.3.4', key: null, until: Date.now() + 10**5 },
-        { ip: '5.6.7.8', key: null, until: Date.now() + 10**6 },
-        { ip: null, key: NULL_KEY, until: Date.now() + 10**7 }
+        { ip: '1.2.3.4', until: Date.now() + 10**5 } as LimitedLogEntry,
+        { ip: '5.6.7.8', until: Date.now() + 10**6 } as LimitedLogEntry,
+        { key: NULL_KEY, until: Date.now() + 10**7 } as LimitedLogEntry
     ]);
 
     return newData;
