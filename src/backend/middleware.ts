@@ -55,64 +55,64 @@ export const config = { api: { bodyParser: { sizeLimit: getEnv().MAX_CONTENT_LEN
  * endpoints).
  */
 export async function handleEndpoint(fn: AsyncHanCallback, { req, res, methods }: GenHanParams): Promise<void> {
+    const resp = res as typeof res & { $send: typeof res.send };
+    // ? This will let us know if the sent method was called
+    let sent = false;
+
+    resp.$send = resp.send;
+    resp.send = (...args): void => {
+        sent = true;
+        addToRequestLog({ req, res });
+        resp.$send(...args);
+    };
+
     try {
         await runCorsMiddleware(req, res);
 
         const { limited, retryAfter } = await isRateLimited(req);
 
         if(!getEnv().IGNORE_RATE_LIMITS && limited)
-            sendHttpRateLimited(res, { retryAfter });
+            sendHttpRateLimited(resp, { retryAfter });
 
         else if(getEnv().LOCKOUT_ALL_KEYS || typeof req.headers.key != 'string' || !(await isKeyAuthentic(req.headers.key)))
-            sendHttpUnauthenticated(res);
+            sendHttpUnauthenticated(resp);
 
         else if(!req.method || getEnv().DISALLOWED_METHODS.includes(req.method) || !methods.includes(req.method))
-            sendHttpBadMethod(res);
+            sendHttpBadMethod(resp);
 
         else if(isDueForContrivedError())
-            sendHttpContrivedError(res);
+            sendHttpContrivedError(resp);
 
         else {
-            const resp = res as typeof res & { $send: typeof res.send };
-            // ? This will let us know if the sent method was called
-            let sent = false;
-
-            resp.$send = resp.send;
-            resp.send = (...args): void => {
-                sent = true;
-                addToRequestLog({ req, res });
-                resp.$send(...args);
-            };
-
             await fn({ req, res: resp });
 
             // ? If the response hasn't been sent yet, send one now
-            !sent && sendNotImplementedError(res);
+            !sent && sendNotImplementedError(resp);
         }
     }
 
     catch(error) {
         if(error instanceof GuruMeditationError)
-            sendHttpError(res, { error: 'sanity check failed: please report exactly what you did just now!' });
+            sendHttpError(resp, { error: 'sanity check failed: please report exactly what you did just now!' });
 
         else if((error instanceof UpsertFailedError) ||
           (error instanceof IdTypeError) ||
           (error instanceof ApiKeyTypeError) ||
           (error instanceof LimitTypeError) ||
           (error instanceof ValidationError)) {
-            sendHttpBadRequest(res, { ...(error.message ? { error: error.message } : {}) });
+            sendHttpBadRequest(resp, { ...(error.message ? { error: error.message } : {}) });
         }
 
         else if(error instanceof NotAuthorizedError)
-            sendHttpUnauthorized(res);
+            sendHttpUnauthorized(resp);
 
         else if(error instanceof NotFoundError)
-            sendHttpNotFound(res);
+            sendHttpNotFound(resp);
 
         else if(error instanceof AppError)
-            sendHttpError(res, { ...(error.message ? { error: error.message } : {}) });
+            sendHttpError(resp, { ...(error.message ? { error: error.message } : {}) });
 
         else
-            sendHttpError(res);
+            sendHttpError(resp);
     }
 }
