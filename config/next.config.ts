@@ -10,9 +10,10 @@ require('./src/dev-utils').populateEnv();
 const paths = {
     universe: `${__dirname}/src/`,
     multiverse: `${__dirname}/lib/`,
+    // types/ is purposely excluded
 };
 
-module.exports = (): object => {
+module.exports = () => {
     return withBundleAnalyzer({
         enabled: process.env.ANALYZE === 'true'
     })({
@@ -30,6 +31,7 @@ module.exports = (): object => {
                 ...config.resolve.alias,
                 universe: paths.universe,
                 multiverse: paths.multiverse,
+                // types/ is purposely excluded
             });
 
             return config;

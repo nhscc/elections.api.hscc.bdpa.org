@@ -1,7 +1,6 @@
 build/
 node_modules/
 coverage/
-.vscode/
 .next
 .env
 *.pem
