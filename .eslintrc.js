@@ -4,18 +4,15 @@ module.exports = {
     parser: '@typescript-eslint/parser',
     plugins: [
         '@typescript-eslint',
-        'jsx-a11y',
         'import'
     ],
     extends: [
         'eslint:recommended',
         'plugin:@typescript-eslint/eslint-recommended',
         'plugin:@typescript-eslint/recommended',
-        'plugin:jsx-a11y/recommended',
         'plugin:import/errors',
         'plugin:import/warnings',
         'plugin:import/typescript',
-        'plugin:react/recommended'
     ],
     parserOptions: {
         ecmaVersion: 8,
@@ -38,10 +35,10 @@ module.exports = {
         'import/no-unresolved': ['error', { commonjs: true }],
         'no-unused-vars': 'off',
         'no-restricted-globals': ['warn'].concat(restrictedGlobals),
-        'react/jsx-max-depth': 'error',
         'no-extra-boolean-cast': 'off',
         '@typescript-eslint/camelcase': 'off',
         '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
         // ? Disable these rules for all files...
         'no-undef': 'off',
         '@typescript-eslint/no-var-requires': 'off',
@@ -57,6 +54,9 @@ module.exports = {
         }
     }],
     settings: {
+        'react': {
+            version: 'detect'
+        },
         'import/extensions': [
             '.ts', '.tsx', '.js', '.jsx',
         ],
@@ -68,7 +68,8 @@ module.exports = {
         'import/resolver': {
             alias : {
                 map: [
-                    // ! If changed, also update these aliases in package.json and .eslint.rc
+                    // ! If changed, also update these aliases in tsconfig.js &
+                    // ! package.json
                     ['universe','./src'],
                     ['multiverse','./lib'],
                     ['types','./types'],
@@ -81,5 +82,6 @@ module.exports = {
             // ? Don't go complaining about anything that we don't own
             '.*/node_modules/.*',
         ]
-    }
+    },
+    ignorePatterns: ['coverage', 'build']
 };

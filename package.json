@@ -17,7 +17,7 @@
     "list-tasks": "npm run && echo \"Compiling gulp task list...\" && gulp --tasks",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
     "preinstall": "npx npm-force-resolutions",
-    "check-types": "tsc && echo \"no problems detected!\""
+    "check-types": "(tsc || eslint .) && echo \"no problems detected!\""
   },
   "author": "Xunnamius",
   "license": "ISC",
@@ -72,7 +72,6 @@
     "confusing-browser-globals": "^1.0.9",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
-    "dotenv-webpack": "^1.8.0",
     "fast-shuffle": "^3.0.0",
     "isomorphic-unfetch": "^3.0.0",
     "mongodb": "^3.5.7",

@@ -14,7 +14,7 @@
     "moduleResolution": "node",
     "baseUrl": ".",
     "paths": {
-      // ! If changed, also update these aliases in package.json and .eslint.rc
+      // ! If changed, also update these aliases in package.json & .eslintrc.js
       "universe/*": [
         "src/*"
       ],
@@ -36,7 +36,7 @@
     "noEmit": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "inlineSourceMap": true,
+    "inlineSourceMap": true
   },
   "exclude": [
     "node_modules"
