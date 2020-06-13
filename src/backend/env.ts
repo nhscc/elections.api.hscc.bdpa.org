@@ -31,7 +31,7 @@ export function getEnv(loud=false) {
         console.info(env);
     }
 
-    // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     if(env.NODE_ENV == 'unknown' || (isServer() && env.MONGODB_URI === '') ||
        _mustBeGtZero.some(v => !isNumber(v) || v < 0)) {

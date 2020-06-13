@@ -279,7 +279,7 @@ export async function upsertElection(opts: UpsNewEleParams | UpsPatEleParams): P
 
         const { title, description, options, opens, closes, ...rest } = electionData as NewElection;
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         if(rest.deleted !== undefined)
             throw new ValidationError('property "deleted" not allowed here');

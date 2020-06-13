@@ -9,14 +9,14 @@ import type { PublicElection } from 'types/global'
 
 const { getHydratedData } = setupJest();
 
-const electionEndpoint: typeof Election.default & { config?: object } = Election.default;
+const electionEndpoint: typeof Election.default & { config?: Record<string, unknown> } = Election.default;
 electionEndpoint.config = Election.config;
 
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
 
 const KEY = '5db4c4d3-294a-4086-9751-f3fce82d11e4';
 
-const containsOnlyPublicData = (o: object) => {
+const containsOnlyPublicData = (o: Record<string, unknown>) => {
     const {
         title,
         election_id,

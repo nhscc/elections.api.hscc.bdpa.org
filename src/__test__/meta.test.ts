@@ -5,7 +5,7 @@ import { getEnv } from 'universe/backend/env'
 
 const { getHydratedData } = setupJest();
 
-const metaEndpoint: typeof Meta.default & { config?: object } = Meta.default;
+const metaEndpoint: typeof Meta.default & { config?: Record<string, unknown> } = Meta.default;
 metaEndpoint.config = Meta.config;
 
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';

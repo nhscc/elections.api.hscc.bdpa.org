@@ -40,7 +40,7 @@ const runCorsMiddleware = (req: any, res: any) => {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export function sendHttpContrivedError(res: NextApiResponse, responseJson?: object) {
+export function sendHttpContrivedError(res: NextApiResponse, responseJson?: Record<string, unknown>) {
     sendHttpErrorResponse(res, 555, {
         error: '(note: do not report this contrived error)',
         ...responseJson

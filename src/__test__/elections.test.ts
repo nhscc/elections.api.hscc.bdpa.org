@@ -8,14 +8,14 @@ import type { PublicElection, InternalElection } from 'types/global'
 
 const { getHydratedData, getDb } = setupJest();
 
-const electionsEndpoint: typeof Elections.default & { config?: object } = Elections.default;
+const electionsEndpoint: typeof Elections.default & { config?: Record<string, unknown> } = Elections.default;
 electionsEndpoint.config = Elections.config;
 
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
 
 const KEY = '5db4c4d3-294a-4086-9751-f3fce82d11e4';
 
-const containsOnlyPublicData = (o: object) => {
+const containsOnlyPublicData = (o: Record<string, unknown>) => {
     const {
         title,
         election_id,
@@ -190,7 +190,7 @@ describe('api/v1/elections', () => {
 
                 expect(response.status).toBe(200);
                 expect(json.success).toBe(true);
-                expect(json.elections.some((o: object) => !containsOnlyPublicData(o))).toBeFalse();
+                expect(json.elections.some((o: Record<string, unknown>) => !containsOnlyPublicData(o))).toBeFalse();
             }
         });
     });

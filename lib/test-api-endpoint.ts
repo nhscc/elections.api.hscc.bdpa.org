@@ -7,7 +7,7 @@ export type TestParams = { fetch: (init?: RequestInit) => ReturnType<typeof fetc
 
 export type TesApiEndParams = {
     test: (obj: TestParams) => Promise<void>;
-    params?: object;
+    params?: Record<string, unknown>;
     requestPatcher?: (req: IncomingMessage) => void;
     responsePatcher?: (res: ServerResponse) => void;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

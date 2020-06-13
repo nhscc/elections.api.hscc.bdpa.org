@@ -80,14 +80,14 @@ describe('universe/backend', () => {
         });
 
         it('rejects if no key is provided', async () => {
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             expect(Backend.getPublicElections()).toReject();
             // @ts-ignore
             expect(Backend.getPublicElections({ key: 5 })).toReject();
             // @ts-ignore
             expect(Backend.getPublicElections({ key: null })).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
         });
 
         it('returns paginated data respecting limit and after', async () => {
@@ -174,14 +174,14 @@ describe('universe/backend', () => {
 
             expect(Backend.getPublicElections({
                 key: Backend.NULL_KEY,
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 after: 'notAnObjectId!'
             })).toReject();
         });
 
         it('rejects on strange/bad limit and/or after', async () => {
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, limit: 'lol' })).toReject();
             // @ts-ignore
@@ -194,7 +194,7 @@ describe('universe/backend', () => {
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, after: 100 })).toReject();
             // @ts-ignore
             expect(Backend.getPublicElections({ key: Backend.NULL_KEY, after: false })).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
         });
     });
 
@@ -220,7 +220,7 @@ describe('universe/backend', () => {
 
         it('rejects if election_id does not exist', async () => {
             expect(Backend.getPublicElection({ electionId: new ObjectId(), key: Backend.NULL_KEY })).toReject();
-            // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             //@ts-ignore
             expect(Backend.getPublicElection({ electionId: 'not a real id', key: Backend.NULL_KEY })).toReject();
         });
@@ -247,12 +247,12 @@ describe('universe/backend', () => {
             const elections = getHydratedData().elections;
 
             expect(await Backend.doesElectionExist(new ObjectId())).toEqual(false);
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             expect(Backend.doesElectionExist(null)).toReject();
             // @ts-ignore
             expect(Backend.doesElectionExist(undefined)).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
             expect(await Backend.doesElectionExist(elections[0].election_id)).toEqual(true);
             expect(await Backend.doesElectionExist(elections[1].election_id)).toEqual(true);
             expect(await Backend.doesElectionExist(elections[5].election_id)).toEqual(true);
@@ -273,7 +273,7 @@ describe('universe/backend', () => {
             // ? Bad props should be ignored
             const badProps = {
                 election_id: new ObjectId(),
-                /* eslint-disable @typescript-eslint/ban-ts-ignore */
+                /* eslint-disable @typescript-eslint/ban-ts-comment */
                 // @ts-ignore
                 _id: new ObjectId(),
                 // @ts-ignore
@@ -286,7 +286,7 @@ describe('universe/backend', () => {
                 fakeprop: 'bad',
                 //@ ts-ignore
                 options: ['repeated', 'repeated']
-                /* eslint-enable @typescript-eslint/ban-ts-ignore */
+                /* eslint-enable @typescript-eslint/ban-ts-comment */
             };
 
             const results = await Promise.all(Object.entries(badProps).map(([k, v]) => Backend.upsertElection({
@@ -328,7 +328,7 @@ describe('universe/backend', () => {
                 key: Backend.NULL_KEY
             })).toReject();
 
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             expect(Backend.upsertElection({
                 election: { ...badElection, opens },
@@ -340,7 +340,7 @@ describe('universe/backend', () => {
                 election: { ...badElection, closes },
                 key: Backend.NULL_KEY
             })).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
 
             expect(Backend.upsertElection({
                 election: { ...badElection, closes: 100, opens },
@@ -383,7 +383,7 @@ describe('universe/backend', () => {
 
             // ? Bad props should be ignored
             const badProps = {
-                // eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 created: 100,
                 opens: newElection.closes,
@@ -409,12 +409,12 @@ describe('universe/backend', () => {
             const returnedElection = await Backend.getInternalElection(election1.election_id || new ObjectId('bad'));
 
             expect(returnedElection.election_id).toEqual(election1.election_id);
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             expect(returnedElection._id).toBeUndefined();
             // @ts-ignore
             expect(returnedElection.extra).toBeUndefined();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
             expect(returnedElection.created).toEqual(election1.created);
             // ? Bad props should be ignored!
             expect(returnedElection.created).not.toEqual(100);
@@ -431,7 +431,7 @@ describe('universe/backend', () => {
         });
 
         it('rejects when missing necessary params', async () => {
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             // @ts-ignore
             const newElection00: NewElection = { election_id: 'fake', bad: 'nope' };
             // @ts-ignore
@@ -454,7 +454,7 @@ describe('universe/backend', () => {
                 title: 'New election',
                 opens: Date.now() + 10**6,
             };
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
 
             expect(Backend.upsertElection({ election: newElection1, key: Backend.NULL_KEY })).toReject();
             expect(Backend.upsertElection({ election: newElection2, key: Backend.NULL_KEY })).toReject();
@@ -769,7 +769,7 @@ describe('universe/backend', () => {
 
         it('::replaceRankings rejects on illegal options', async () => {
             const election = getHydratedData().elections[0];
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             expect(Backend.replaceRankings({
                 electionId: election.election_id,
                 // @ts-ignore
@@ -818,7 +818,7 @@ describe('universe/backend', () => {
                 rankings: [{ voter_id: '1', ranking: [1] }]
             })).toReject();
 
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
             expect(Backend.replaceRankings({
                 electionId: election.election_id,
                 rankings: [{ voter_id: '1', ranking: ['1'] }]
@@ -931,7 +931,7 @@ describe('universe/backend', () => {
             ];
             const newRankings24 = [{ voter_id: '', ranking: election.options }];
 
-            /* eslint-disable @typescript-eslint/ban-ts-ignore */
+            /* eslint-disable @typescript-eslint/ban-ts-comment */
             expect(Backend.replaceRankings({
                 electionId: election.election_id,
                 // @ts-ignore
@@ -1075,7 +1075,7 @@ describe('universe/backend', () => {
                 // @ts-ignore
                 rankings: newRankings24
             })).toReject();
-            /* eslint-enable @typescript-eslint/ban-ts-ignore */
+            /* eslint-enable @typescript-eslint/ban-ts-comment */
         });
 
         it('can fetch the empty array inserted when a brand new election is created', async () => {

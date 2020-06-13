@@ -7,7 +7,7 @@ import { ObjectId } from 'mongodb'
 
 const { getHydratedData } = setupJest();
 
-const votersEndpoint: typeof Voters.default & { config?: object } = Voters.default;
+const votersEndpoint: typeof Voters.default & { config?: Record<string, unknown> } = Voters.default;
 votersEndpoint.config = Voters.config;
 
 process.env.REQUESTS_PER_CONTRIVED_ERROR = '0';
