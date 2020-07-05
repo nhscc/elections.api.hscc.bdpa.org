@@ -12,7 +12,7 @@ If you run into any issues or find any bugs, please [report
 them](https://github.com/nhscc/elections.api.hscc.bdpa.org/issues/new)!
 
 Root URI: https://elections.api.hscc.bdpa.org/v1  
-Documentation and playground with examples: https://electionshscc.docs.apiary.io
+Documentation and playground with examples: https://hscc4cfe8be7.docs.apiary.io
 
 ## Running a local version of the API
 
