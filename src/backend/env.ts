@@ -28,7 +28,7 @@ export function getEnv(loud=false) {
 
     if(loud && env.NODE_ENV == 'development') {
         /* eslint-disable-next-line no-console */
-        console.info(env);
+        console.info(`debug - ${env}`);
     }
 
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
