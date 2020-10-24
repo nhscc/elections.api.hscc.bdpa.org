@@ -1,13 +1,13 @@
 {
   "name": "elections.api.hscc.bdpa.org",
   "version": "1.0.0",
+  "private": true,
   "description": "https://elections.api.hscc.bdpa.org",
   "repository": {
     "type": "git",
     "url": "https://github.com/nhscc/elections.api.hscc.bdpa.org"
   },
   "license": "Unlicense",
-  "private": true,
   "author": "Xunnamius",
   "scripts": {
     "build": "gulp checkEnv && next build",
@@ -15,7 +15,6 @@
     "dev": "gulp checkEnv && next -p `npx -q get-clean-port`",
     "dev-windows": "gulp checkEnv && next -p 3000",
     "generate": "BABEL_ENV=generator babel config --extensions \".ts\" --out-dir .",
-    "preinstall": "test -r package-lock.json && npx npm-force-resolutions || echo '(skipped security resolutions)'",
     "list-tasks": "npm run && echo \"Compiling gulp task list...\" && gulp --tasks",
     "regenerate": "gulp regenerate",
     "repl": "rlwrap npx -p @babel/core -p @babel/node babel-node",
@@ -34,8 +33,8 @@
       "^types/(.*)$": "<rootDir>/types/$1"
     },
     "resolutions": {
-      "node-fetch": "^2.6.1",
-      "yargs-parser": "^13.1.2"
+      "node-fetch": "2.6.1",
+      "object-path": "0.11.5"
     },
     "setupFilesAfterEnv": [
       "jest-extended"
