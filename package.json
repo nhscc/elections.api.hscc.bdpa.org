@@ -80,7 +80,7 @@
     "dotenv": "^8.2.0",
     "fast-shuffle": "^3.0.0",
     "isomorphic-unfetch": "^3.1.0",
-    "mongodb": "^3.6.2",
+    "mongodb": "^3.6.3",
     "next": "^9.5.3",
     "next-transpile-modules": "^3.3.0",
     "react": "^16.13.1",
