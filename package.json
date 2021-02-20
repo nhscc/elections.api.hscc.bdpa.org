@@ -75,7 +75,7 @@
     "@babel/preset-env": "^7.11.5",
     "@babel/preset-typescript": "^7.10.4",
     "bytes": "^3.1.0",
-    "confusing-browser-globals": "^1.0.9",
+    "confusing-browser-globals": "^1.0.10",
     "cors": "^2.8.5",
     "dotenv": "^8.2.0",
     "fast-shuffle": "^3.0.0",
