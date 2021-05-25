@@ -1,6 +1,6 @@
 # BDPA Elections Public API
 
-The live API used by solutions to the 2019 NHSCC problem statement. It was built
+The live API used by solutions to the Elections NHSCC problem statement. It was built
 according to [JAMstack principles](https://jamstack.org/) using TypeScript
 (JavaScript) and MongoDB. The production instance is hosted on
 [Vercel](https://vercel.com) with [MongoDB
